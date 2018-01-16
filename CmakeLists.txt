@@ -1,0 +1,16 @@
+cmake_minimum_required(VERSION 3.3)
+
+option(PSTDLIB_TESTING "Build test library for pstdlib" OFF)
+
+set(SOURCES
+    cstring.cpp cstring.hpp
+)
+add_library(pstdlib STATIC  ${SOURCES})
+
+set_target_properties(pstdlib PROPERTIES CXX_STANDARD 14)
+target_include_directories(pstdlib INTERFACE  ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_options(pstdlib PRIVATE -Wall -Wextra -ffreestanding)
+
+if(PSTDLIB_TESTING)
+    add_subdirectory(testing)
+endif()
