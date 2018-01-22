@@ -1,6 +1,8 @@
 #include "catch.hpp"
 #include "cstring.hpp"
 #include <cstring>
+#include <type_traits>
+
 
 namespace p = pstd;
 
@@ -15,7 +17,7 @@ TEST_CASE( "memchr", "[cstring]")
     REQUIRE(p::memchr(teststring, 'T', sl) == nullptr);
     REQUIRE(p::memchr(teststring, '\0', sl) == nullptr);
     REQUIRE(p::memchr(teststring, ' ', 3) == nullptr);
-    REQUIRE(p::memchr(nullptr, ' ', 1233) == nullptr);
+    REQUIRE(p::memchr(static_cast<char*>(nullptr), ' ', 1233) == nullptr);
 }
 TEST_CASE( "memcmp", "[cstring]")
 {
@@ -634,7 +636,7 @@ TEST_CASE( "strpbrk", "[cstring]")
     {
         WHEN("null is searched with b")
         {
-            auto res = p::strpbrk(nullptr, s);
+            auto res = p::strpbrk((const char*)nullptr, s);
             THEN("result should be null")
             {
                 REQUIRE(res == nullptr);
@@ -649,7 +651,7 @@ TEST_CASE( "strrchr", "[cstring]")
     {
         WHEN("null string is searched")
         {
-            auto res = p::strrchr(nullptr, 'c');
+            auto res = p::strrchr((const char*)nullptr, 'c');
             THEN("res should be null" )
             {
                 REQUIRE(res == nullptr);

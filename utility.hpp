@@ -11,6 +11,7 @@ namespace pstd
         return static_cast<typename remove_reference<T>::type&&>(t);
     }
 
+    /*
     template<class T>
     constexpr inline T&& forward(typename remove_reference<T>::type& t) noexcept
     {
@@ -22,6 +23,24 @@ namespace pstd
         static_assert(not is_lvalue_reference<T>::value, "Can not forward rvalue as lvalue");
         return static_cast<T&&>(t);
     }
+    */
+
+    //see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2009/n2951.html
+    template <class T, class U,
+    class = typename enable_if<
+         (is_lvalue_reference<T>::value ?
+             is_lvalue_reference<U>::value :
+             true) &&
+         is_convertible<typename remove_reference<U>::type*,
+                        typename remove_reference<T>::type*>::value
+        >::type>
+    inline
+    T&&
+    forward(U&& u)
+    {
+        return static_cast<T&&>(u);
+    }
+
 
     //specialize this for your own custom types if swapping can be more efficient!
     template<typename T>
@@ -48,9 +67,6 @@ namespace pstd
     template<class T>
     void as_const(const T&&) = delete;
 
-    //intentionally no definition.
-    template<typename T>
-    T&& declval() noexcept;
 
     template<class T1, class T2>
     struct pair
@@ -152,6 +168,16 @@ namespace pstd
 
     template<class T>
     struct tuple_size;
+
+    template<class T>
+    struct tuple_size<const T>: integral_constant<size_t, tuple_size<T>::value>{};
+
+    template<class T>
+    struct tuple_size<volatile T>: integral_constant<size_t, tuple_size<T>::value>{};
+
+    template<class T>
+    struct tuple_size<const volatile T>: integral_constant<size_t, tuple_size<T>::value>{};
+
 
     template<size_t I, class Container>
     using tuple_element_t = typename tuple_element<I, Container>::type;

@@ -2,7 +2,7 @@
 #include "cstring.hpp"
 using namespace pstd;
 
-void* pstd::memchr(void const* str, char c, size_t n)
+void const* pstd::memchr(void const* str, char c, size_t n)
 {
     if(str == nullptr) return nullptr;
     auto p = static_cast<char const*>(str);
@@ -11,6 +11,11 @@ void* pstd::memchr(void const* str, char c, size_t n)
         if(*p == c) return const_cast<void*>((void const*)p);
     }
     return nullptr;
+}
+
+void* pstd::memchr(void *str, char c, size_t n)
+{
+    return const_cast<void*>(pstd::memchr(const_cast<void const*>(str), c, n));
 }
 
 int pstd::memcmp(void const* str1, void const* str2, size_t n)
@@ -30,6 +35,7 @@ int pstd::memcmp(void const* str1, void const* str2, size_t n)
 
 void* pstd::memcpy(void* dest, void const* src, size_t n)
 {
+    //return __builtin_memcpy(dest, src, n);
     //no large-buffer optimization here.
     //can optimize by moving data 8 bytes at a time.
     auto d = static_cast<uint8_t*>(dest);
@@ -74,7 +80,6 @@ void* pstd::memset(void* buf, char c, size_t n)
         b[i] = c;
     }
     return buf;
-
 }
 
 char* pstd::strcat(char* dest, char const* src)
@@ -97,13 +102,18 @@ char* pstd::strncat(char* dest, char const* src, size_t n)
     return dest;
 }
 
-char* pstd::strchr(char const* str, char c)
+char const* pstd::strchr(char const* str, char c)
 {
     for(auto p = str; *p != '\0'; p++)
     {
         if(*p == c) return const_cast<char*>(p);
     }
     return nullptr;
+}
+
+char* pstd::strchr(char* str, char c)
+{
+    return const_cast<char*>(pstd::strchr(const_cast<char const*>(str),c));
 }
 
 int pstd::strcmp(char const* str1, char const* str2)
@@ -214,7 +224,7 @@ size_t pstd::strlen_n(char const* s, size_t maxlength)
     return count;
 }
 
-char* pstd::strpbrk(char const* str, char const* breakset)
+char const* pstd::strpbrk(char const* str, char const* breakset)
 {
     if(str == nullptr or breakset == nullptr) return nullptr;
     auto breakset_len = strlen(breakset);
@@ -231,8 +241,13 @@ char* pstd::strpbrk(char const* str, char const* breakset)
     return nullptr;
 }
 
+char* pstd::strpbrk(char* str, char const* breakset)
+{
+    return const_cast<char*>(pstd::strpbrk(const_cast<char const*>(str), breakset));
+}
 
-char* pstd::strrchr(char const* str, char c)
+
+char const* pstd::strrchr(char const* str, char c)
 {
     if(str == nullptr) return nullptr;
     auto slen = strlen(str);
@@ -245,6 +260,11 @@ char* pstd::strrchr(char const* str, char c)
         }
     }
     return nullptr;
+}
+
+char* pstd::strrchr(char* str, char c)
+{
+    return const_cast<char*>(pstd::strrchr(const_cast<char const*>(str), c));
 }
 
 size_t pstd::strspn(char const* str, char const* matches)
@@ -264,7 +284,7 @@ size_t pstd::strspn(char const* str, char const* matches)
     return count;
 }
 
-char* pstd::strstr(char const* str, char const* substring)
+char const* pstd::strstr(char const* str, char const* substring)
 {
     // a proper approach would be to use boyer-moore here, but I'm lazy.
     //could also early-exit when the search string is shorter than the substring.
@@ -281,4 +301,9 @@ char* pstd::strstr(char const* str, char const* substring)
         p++;
     }
     return nullptr;
+}
+
+char* pstd::strstr(char* str, char const* substring)
+{
+    return const_cast<char*>(pstd::strstr(const_cast<char const*>(str), substring));
 }

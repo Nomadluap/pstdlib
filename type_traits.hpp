@@ -8,7 +8,7 @@ namespace pstd{
     template<typename T, T Val>
     struct integral_constant
     {
-        using type = integral_constant;
+        using type = integral_constant<T, Val>;
         using value_type = T;
         constexpr static T value = Val;
 
@@ -31,25 +31,25 @@ namespace pstd{
     //some have compiler builtins.
     // https://gcc.gnu.org/onlinedocs//gcc/Type-Traits.html
     template<typename T>
-    struct has_nothrow_assign: public boolean_constant<__has_nothrow_assign(T)>{};
+    struct is_nothrow_assignable: public boolean_constant<__has_nothrow_assign(T)>{};
 
     template<typename T>
-    struct has_nothrow_copy: public boolean_constant< __has_nothrow_copy(T)>{};
+    struct is_nothrow_copyable: public boolean_constant< __has_nothrow_copy(T)>{};
 
     template<typename T>
-    struct has_nothrow_constructor: public boolean_constant<__has_nothrow_constructor(T)>{};
+    struct is_nothrow_constructable: public boolean_constant<__has_nothrow_constructor(T)>{};
 
     template<typename T>
-    struct has_trivial_assign: public boolean_constant<__has_trivial_assign(T)>{};
+    struct is_trivially_assignable: public boolean_constant<__has_trivial_assign(T)>{};
 
     template<typename T>
-    struct has_trivial_copy: public boolean_constant<__has_trivial_copy(T)>{};
+    struct is_trivially_copyable: public boolean_constant<__has_trivial_copy(T)>{};
 
     template<typename T>
-    struct has_trivial_constructor: public boolean_constant<__has_trivial_constructor(T)>{};
+    struct is_trivially_constructible: public boolean_constant<__has_trivial_constructor(T)>{};
 
     template<typename T>
-    struct has_trivial_destructor: public boolean_constant<__has_trivial_destructor(T)>{};
+    struct is_trivially_destructable: public boolean_constant<__has_trivial_destructor(T)>{};
 
     template<typename T>
     struct has_virtual_destructor: public boolean_constant<__has_virtual_destructor(T)>{};
@@ -98,7 +98,7 @@ namespace pstd{
     template<typename T> struct remove_const<const T> {using type = T;};
 
     template<typename T> struct remove_volatile {using type = T;};
-    template<typename T> struct remove_volatile<const T> {using type = T;};
+    template<typename T> struct remove_volatile<volatile T> {using type = T;};
 
     template<typename T>
     struct remove_cv
@@ -120,6 +120,8 @@ namespace pstd{
 
     template<typename T> struct add_const {using type = T const;};
     template<typename T> struct add_volatile {using type = T volatile;};
+    template<typename T> using add_const_t = typename add_const<T>::type;
+    template<typename T> using add_volatile_t = typename add_volatile<T>::type;
 
 
     template<typename T>
@@ -142,13 +144,15 @@ namespace pstd{
     template<typename T>
     struct remove_cvref
     {
-        using type = typename remove_reference<typename remove_cv<T>::type>::type;
+        using type = typename remove_cv<typename remove_reference<typename remove_cv<T>::type>::type>::type;
     };
     template<typename T>
     using remove_cvref_t = typename remove_cvref<T>::type;
 
     template<typename T> struct remove_pointer {using type = T;};
     template<typename T> struct remove_pointer<T*> {using type = T;};
+    template<typename T> struct remove_pointer<T* const> {using type = T;};
+    template<typename T> struct remove_pointer<T* volatile> {using type = T;};
     template<typename T>
     using remove_pointer_t = typename remove_pointer<T>::type;
 
@@ -158,26 +162,20 @@ namespace pstd{
     // Rank: size of a c-array.
     template<typename T>
     struct rank: public integral_constant<size_t, 0>{};
-
     template<typename T>
     struct rank<T[]>: public integral_constant<size_t, rank<T>::value + 1>{};
-
     template<typename T, size_t N>
     struct rank<T[N]>: public integral_constant<size_t, rank<T>::value + 1>{};
 
     //Extent: size of a given dimension of a c-array.
     template<typename T, unsigned N = 0>
     struct extent: integral_constant<size_t, 0>{};
-
     template<typename T>
     struct extent<T[], 0>: integral_constant<size_t, 0>{};
-
     template<typename T, unsigned N>
     struct extent<T[], N>: extent<T, N-1>{};
-
     template<typename T, size_t I>
     struct extent<T[I], 0>: integral_constant<size_t, I>{};
-
     template<typename T, size_t I, unsigned N>
     struct extent<T[I], N>: extent<T, N-1>{};
 
@@ -185,16 +183,14 @@ namespace pstd{
     template<typename T> struct remove_extent {using type = T;};
     template<typename T> struct remove_extent<T[]> {using type = T;};
     template<typename T, size_t N> struct remove_extent<T[N]> {using type = T;};
+    template<typename T> using remove_extent_t = typename remove_extent<T>::type;
 
     template<typename T>
     struct remove_all_extents{using type = T;};
-
     template<typename T>
     struct remove_all_extents<T[]>{using type = typename remove_all_extents<T>::type;};
-
     template<typename T, size_t N>
     struct remove_all_extents<T[N]>{using type = typename remove_all_extents<T>::type;};
-
     template<typename T>
     using remove_all_extents_t = typename remove_all_extents<T>::type;
 
@@ -203,7 +199,6 @@ namespace pstd{
     {
         constexpr static size_t value = alignof(typename remove_extent<typename remove_reference<T>::type>::type);
     };
-
 
     /*
      * Is same is true iff the type of A is the type of b, and they are both equally cv-qualified.
@@ -215,27 +210,35 @@ namespace pstd{
     template<typename T> struct is_nullptr: is_same<remove_cv_t<T>, nullptr_t>{};
 
     //is integral
-    template<typename T> struct is_integral: false_type{};
-    template<> struct is_integral<char>: true_type{};
-    template<> struct is_integral<int8_t>: true_type{};
-    template<> struct is_integral<int16_t>: true_type{};
-    template<> struct is_integral<int32_t>: true_type{};
-    template<> struct is_integral<int64_t>: true_type{};
-    template<> struct is_integral<uint8_t>: true_type{};
-    template<> struct is_integral<uint16_t>: true_type{};
-    template<> struct is_integral<uint32_t>: true_type{};
-    template<> struct is_integral<uint64_t>: true_type{};
-    template<> struct is_integral<bool>: true_type{};
-    template<typename T> struct is_integral<const T>: is_integral<T>{};
-    template<typename T> struct is_integral<volatile T>: is_integral<T>{};
+    namespace detail
+    {
+        template<typename T> struct is_integral: false_type{};
+        template<> struct is_integral<char>: true_type{};
+        template<> struct is_integral<char16_t>: true_type{};
+        template<> struct is_integral<char32_t>: true_type{};
+        template<> struct is_integral<short>: true_type{};
+        template<> struct is_integral<int>: true_type{};
+        template<> struct is_integral<long>: true_type{};
+        template<> struct is_integral<long long>: true_type{};
+        template<> struct is_integral<unsigned char>: true_type{};
+        template<> struct is_integral<signed char>: true_type{};
+        template<> struct is_integral<unsigned short>: true_type{};
+        template<> struct is_integral<unsigned int>: true_type{};
+        template<> struct is_integral<unsigned long>: true_type{};
+        template<> struct is_integral<unsigned long long>: true_type{};
+        template<> struct is_integral<bool>: true_type{};
+    }
+    template<typename T> struct is_integral: detail::is_integral<remove_cv_t<T>>{};
 
     //is floating point
-    template<typename T> struct is_floating_point: false_type{};
-    template<> struct is_floating_point<float>: true_type{};
-    template<> struct is_floating_point<double>: true_type{};
-    template<> struct is_floating_point<long double>: true_type{};
-    template<typename T> struct is_floating_point<const T>: is_floating_point<T>{};
-    template<typename T> struct is_floating_point<volatile T>: is_floating_point<T>{};
+    namespace detail
+    {
+        template<typename T> struct is_floating_point: false_type{};
+        template<> struct is_floating_point<float>: true_type{};
+        template<> struct is_floating_point<double>: true_type{};
+        template<> struct is_floating_point<long double>: true_type{};
+    }
+    template<typename T> struct is_floating_point: detail::is_floating_point<remove_cv_t<T>>{};
 
     //is arithmetic
     template<typename T> struct is_arithmetic: disjunction<
@@ -339,6 +342,8 @@ namespace pstd{
         >::type;
     };
 
+    template<typename T> using decay_t = typename decay<T>::type;
+
     template<size_t Len, size_t Align>
     struct aligned_storage
     {
@@ -347,6 +352,35 @@ namespace pstd{
             alignas(Align) unsigned char data[Len];
         };
     };
+
+    //intentionally no definition.
+    template<typename T>
+    T&& declval() noexcept;
+
+    namespace detail
+    {
+        template<class From, class To, bool = is_void<From>::value or is_function<To>::value or is_array<To>::value>
+        struct is_convertible_helper {using type = typename is_void<To>::type;};
+
+        template<class From, class To>
+        class is_convertible_helper<From, To, false>
+        {
+            template<typename To1>
+            static void test_aux(To1);
+
+            template<typename From1, typename To1,
+                typename = decltype(test_aux<To1>(declval<From1>()))>
+            static true_type test(int);
+
+            template<typename, typename> static false_type test(...);
+
+        public:
+            using type = typename decltype(test<From, To>(0))::type;
+
+        };
+    }
+    template<class From, class To>
+    struct is_convertible: public detail::is_convertible_helper<From, To>::type{};
 
 
 

@@ -13,7 +13,8 @@ namespace pstd
      * @param n Length of string, in bytes.
      * @return Pointer to the first byte in str that is equal to c, or null if the byte is not found.
      */
-    void* memchr(void const* str, char c, size_t n);
+    void const* memchr(void const* str, char c, size_t n);
+    void* memchr(void* str, char c, size_t n);
 
     /**
      * Compare the two memory buffers lexographically.
@@ -80,7 +81,8 @@ namespace pstd
      * @return Pointer to the first found character, or nullptr if the character could not be
      * found.
      */
-    char* strchr(char const* str, char c);
+    char const* strchr(char const* str, char c);
+    char * strchr(char* str, char c);
 
     /**
      * Lexographical comparison of two null-terminated strings.
@@ -147,7 +149,8 @@ namespace pstd
      * @param breakset null-terminated array of characters to break on.
      * @return Pointer to first break character, or nullptr if none can be found.
      */
-    char* strpbrk(char const* str, char const* breakset);
+    char const* strpbrk(char const* str, char const* breakset);
+    char* strpbrk(char * str, char const* breakset);
 
 
     /**
@@ -156,7 +159,8 @@ namespace pstd
      * @param c Search character.
      * @return pointer to found character in str, or nullptr if c could not be found.
      */
-    char* strrchr(char const* str, char c);
+    char const* strrchr(char const* str, char c);
+    char* strrchr(char* str, char c);
 
     /**
      * Returns the length of the maximal prefix of str that contains only characters found in
@@ -174,9 +178,7 @@ namespace pstd
      * @return Pointer to the first character of substring in str, or nullptr if substring could
      * not be found.
      */
-    char* strstr(char const* str, char const* substring);
-
-
-
+    char const* strstr(char const* str, char const* substring);
+    char* strstr(char* str, char const* substring);
 
 }

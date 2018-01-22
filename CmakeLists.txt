@@ -4,7 +4,7 @@ option(PSTDLIB_TESTING "Build test library for pstdlib" OFF)
 
 set(SOURCES
     cstring.cpp cstring.hpp
-    iterator.hpp pstdlib_namespace.hpp type_traits.hpp type_traits.cpp template_ops.cpp template_ops.hpp utility.cpp utility.hpp iterator.cpp array.cpp array.hpp algorithm.cpp algorithm.hpp)
+    iterator.hpp pstdlib_namespace.hpp type_traits.hpp type_traits.cpp template_ops.cpp template_ops.hpp utility.cpp utility.hpp iterator.cpp array.cpp array.hpp algorithm.cpp algorithm.hpp initializer_list.cpp initializer_list.hpp)
 add_library(pstdlib STATIC  ${SOURCES})
 
 set_target_properties(pstdlib PROPERTIES CXX_STANDARD 14)
