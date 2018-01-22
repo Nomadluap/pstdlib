@@ -7,12 +7,18 @@ Pstdlib is written for use in my homebrew OS project for 32-bit X86, paulOS
 
 While this library will try to follow the standard libraries where possible, there will be some places where
 it deviates significantly. Examples include:
+
  - No locale support
+
  - C varargs functions will be replaced with C++ variable templates.
+
  - C++ iostreams will not be implemented.
+
  - All functions are currently in the 'pstd' namespace, to ease testing.
+
  - static_* versions of the standard containers will be included that do not allocate, similar to
    boost::container::static_vector and friends.
+
  - Non-re-entrant versions of some C functions like strtok will be replaced with re-entrant versions.
 
 == What's Implemented ==
@@ -20,14 +26,21 @@ it deviates significantly. Examples include:
 Currently the following is implemented
 
  - C standard library
+
     - string.h (cstring.hpp): all but strtok are implemented and tested.
 
  - C++ Standard Library
+
     - algorithm (algorithm.hpp): ~99% implemented, untested. 
+
     - array (array.hpp): implemented, tested.
+
     - initializer_list (initializer_list.hpp): implemented, untested. 
+
     - iterator (iterator.hpp): most iterator support is implemented, but untested.
+
     - type_traits (type_traits.hpp): most traits are implemented and tested. 
+
     - utility (utility.hpp): implemented, including move, forward, and pair. Tested. 
 
 
@@ -39,3 +52,10 @@ Therefore it should build for most platforms without issue.
 == Compiler Support ==
 
 This library has only ever been tested on GCC, and should work okay on most architectures.
+
+
+== How you can help ==
+
+ - Test cases! If you can add more test cases, it would be much appreciated. 
+ - Optimization! Currently my goal is quantity rather than quality. Optimization in the low level routines would be 
+   great!
