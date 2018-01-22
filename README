@@ -23,11 +23,12 @@ Currently the following is implemented
     - string.h (cstring.hpp): all but strtok are implemented and tested.
 
  - C++ Standard Library
-    - type_traits (type_traits.hpp): most traits are implemented, untested.
+    - algorithm (algorithm.hpp): ~99% implemented, untested. 
+    - array (array.hpp): implemented, tested.
+    - initializer_list (initializer_list.hpp): implemented, untested. 
     - iterator (iterator.hpp): most iterator support is implemented, but untested.
-    - utility (utility.hpp): most things are implemented, including move, forward, and pair.
-    - array (array.hpp): implemented, untested.
-    - algorithm (algorithm.hpp): ~50% implemented, untested.
+    - type_traits (type_traits.hpp): most traits are implemented and tested. 
+    - utility (utility.hpp): implemented, including move, forward, and pair. Tested. 
 
 
 == Build Requirements ==
