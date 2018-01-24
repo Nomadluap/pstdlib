@@ -59,7 +59,7 @@ namespace pstd {
         typename iterator_traits<InputIt>::difference_type n = 0;
         while(first != last)
         {
-            if(*first == last) n++;
+            if(*first == value) n++;
             ++first;
         }
         return n;

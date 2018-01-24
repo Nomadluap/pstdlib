@@ -382,8 +382,4 @@ namespace pstd{
     template<class From, class To>
     struct is_convertible: public detail::is_convertible_helper<From, To>::type{};
 
-
-
-
-
 }
