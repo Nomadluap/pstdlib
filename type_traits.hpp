@@ -379,7 +379,83 @@ namespace pstd{
 
         };
     }
+    /**
+     * Deterime if a callable functor From is convertible to the value To.
+     * @tparam From Function object, called with no arguments.
+     * @tparam Returned value.
+     */
     template<class From, class To>
     struct is_convertible: public detail::is_convertible_helper<From, To>::type{};
+
+    namespace detail
+    {
+        template<typename F, typename Dummy, typename... Args>
+        struct invoke_result_helper{};
+
+        template<typename F, typename... Args>
+        struct invoke_result_helper<
+            F,
+            void_t<decltype(declval<F>()(declval<Args>()...))>,
+            Args...
+        >
+        {
+            using type = decltype(declval<F>()(declval<Args>()...));
+        };
+
+
+    }
+
+    template<typename F, typename... Args>
+    struct invoke_result: detail::invoke_result_helper<F, void, Args...>
+    {
+
+    };
+
+    template<typename F, typename... Args>
+    using invoke_result_t = typename invoke_result<F, Args...>::type;
+
+    namespace detail
+    {
+
+        //callable with exact result
+        template<typename F, typename Ret, typename... Args>
+        struct is_callable_with: false_type{};
+
+        template<typename F, typename... Args>
+        struct is_callable_with<
+            F,
+            invoke_result_t<F, Args...>,
+            Args...
+        >: true_type{};
+
+        //callable with any result
+        template<typename F, typename Dummy, typename... Args>
+        struct is_callable: false_type{};
+
+        template<typename F, typename... Args>
+        struct is_callable<
+            F,
+            void_t<invoke_result_t<F, Args...>>,
+            Args...
+        >: true_type{};
+
+        template<typename F, typename Dummy, typename ConvertRet, typename... Args>
+        struct is_callable_converted: false_type{};
+
+        template<typename F, typename Ret, typename... Args>
+        struct is_callable_converted<
+            F,
+            void_t<enable_if_t<is_convertible<invoke_result_t<F, Args...>, Ret>::value, Ret>>,
+            Ret,
+            Args...
+        >: true_type{};
+    }
+
+    template<typename F, typename... Args>
+    struct is_invocable: detail::is_callable<F, void, Args...>{};
+
+    template<typename F, typename Ret, typename... Args>
+    struct is_invocable_r: detail::is_callable_converted<F, void, Ret, Args...>{};
+
 
 }

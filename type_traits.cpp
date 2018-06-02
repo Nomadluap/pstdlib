@@ -227,6 +227,33 @@ namespace
     static_assert(is_convertible<X const*, E>::value);
     static_assert(is_convertible<X&&, E>::value);
 
+    // invoke_result_t
+    struct MultiCall
+    {
+        X operator()();
+        int operator()(double);
+        void operator()(X);
+        S operator()(int);
+
+    };
+
+
+    static_assert(is_same<invoke_result_t<MultiCall>, X>::value, "1");
+    static_assert(is_same<invoke_result_t<MultiCall, double>, int>::value, "2");
+    static_assert(is_same<invoke_result_t<MultiCall, X>, void>::value, "3");
+    static_assert(is_same<invoke_result_t<MultiCall, int>, S>::value, "4");
+
+
+    //detail::is_callable_with
+
+    struct C1
+    {
+        void operator()(int, int){}
+    };
+
+    static_assert(detail::is_callable_with<C1, void, int, int>::value, "a");
+    static_assert(not detail::is_callable_with<C1, int, int, int>::value, "wrong return");
+    static_assert(not detail::is_callable_with<C1, void, int>::value, "wrong args");
 
 
 }

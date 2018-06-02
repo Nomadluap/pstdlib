@@ -7,6 +7,47 @@
 #include <type_traits>
 
 namespace pstd {
+
+    namespace detail
+    {
+        // helper functors that perform equal, greater, and less operations on the underlying values.
+        struct equal
+        {
+            template<class Lhs, class Rhs>
+            bool operator()(Lhs const& lhs, Rhs const& rhs) const
+            {
+                return lhs == rhs;
+            }
+        };
+
+        struct less
+        {
+            template<class Lhs, class Rhs>
+            bool operator()(Lhs const& lhs, Rhs const& rhs) const
+            {
+                return lhs < rhs;
+            }
+        };
+
+        struct greater
+        {
+            template<class Lhs, class Rhs>
+            bool operator()(Lhs const& lhs, Rhs const& rhs) const
+            {
+                return lhs > rhs;
+            }
+        };
+
+    }
+
+    /**
+     * Checks that a  unary predicate returns true for all items in range [first, last)
+     * @tparam InputIter The type fo the input itator.
+     * @tparam UnaryPredicate predicate type
+     * @param first first element in range
+     * @param last end of element range.
+     * @param p Predicate to evaluate. Must be callable with InputIter::value_type.
+     */
     template<typename InputIter, typename UnaryPredicate>
     constexpr bool all_of(InputIter first, InputIter last, UnaryPredicate p )
     {
@@ -20,6 +61,14 @@ namespace pstd {
         return true;
     };
 
+    /**
+     * Checks that a unary predicate returns true for at least one item in [first, last)
+     * @tparam InputIter The type fo the input itator.
+     * @tparam UnaryPredicate predicate type
+     * @param first first element in range
+     * @param last end of element range.
+     * @param p Predicate to evaluate. Must be callable with InputIter::value_type.
+     */
     template<typename InputIter, typename UnaryPredicate>
     constexpr bool any_of(InputIter first, InputIter last, UnaryPredicate p)
     {
@@ -32,6 +81,14 @@ namespace pstd {
         return false;
     };
 
+    /**
+     * Checks that a unary predicate returns true for none of the elements in [first, last)
+     * @tparam InputIter The type fo the input itator.
+     * @tparam UnaryPredicate predicate type
+     * @param first first element in range
+     * @param last end of element range.
+     * @param p Predicate to evaluate. Must be callable with InputIter::value_type.
+     */
     template<typename InputIter, typename UnaryPredicate>
     constexpr bool none_of(InputIter first, InputIter last, UnaryPredicate p)
     {
@@ -51,20 +108,9 @@ namespace pstd {
         return move(f);
     };
 
-    template<typename InputIt, typename T>
-    constexpr typename iterator_traits<InputIt>::difference_type count(InputIt first, InputIt last, T const& value)
-    {
-        static_assert(is_input_iterator<InputIt>::value, "Iterator must be an input iterator");
-
-        typename iterator_traits<InputIt>::difference_type n = 0;
-        while(first != last)
-        {
-            if(*first == value) n++;
-            ++first;
-        }
-        return n;
-    };
-
+    /**
+     * Count the number of items that satisfy the unary predicate p.
+     */
     template<typename InputIt, typename UnaryPredicate>
     constexpr typename iterator_traits<InputIt>::difference_type count_if(InputIt first, InputIt last, UnaryPredicate p)
     {
@@ -80,20 +126,30 @@ namespace pstd {
         return n;
     };
 
-    template<typename InputIt1, typename InputIt2>
-    constexpr pair<InputIt1, InputIt2> mismatch(InputIt1 first1, InputIt1 last1, InputIt2 first2)
+    /**
+     * Count the number of items in the input range that compare equal to value.
+     * @param value The value to count.
+     */
+    template<typename InputIt, typename T>
+    constexpr typename iterator_traits<InputIt>::difference_type count(InputIt first, InputIt last, T const& value)
     {
-        static_assert(is_input_iterator<InputIt1>::value, "Iterator must be an input iterator");
-        static_assert(is_input_iterator<InputIt2>::value, "Iterator must be an input iterator");
-
-        while(*first1 == *first2 and first1 != last1)
-        {
-            ++first1;
-            ++first2;
-        }
-        return {first1, first2};
+        return count_if(first, last, [&value](auto const& v){return v == value;});
     };
 
+
+    /**
+     * Find the first position where two ranges differ.
+     * @tparam InputIt1 Type of the first input range iterator
+     * @tparam InputIt2 Type of the second input range iterator.
+     * @tparam BinaryPredicate A callable with signature compatible to
+     *      bool(InputIt1::value_type const&, InputIt2::value_type const&)
+     * @param first1 Start of first range
+     * @param last1 End of first range
+     * @param first2 Start of second range
+     * @param p Binary predicate to apply
+     * @return A pair of iterators indicating the first mismatched position in ranges 1 and 2, respectively. If the
+     *      ranges are equivalent, then a pair of {last1, first2 + (last1-first1)} will be returned.
+     */
     template<typename InputIt1, typename InputIt2, typename BinaryPredicate>
     constexpr pair<InputIt1, InputIt2> mismatch(InputIt1 first1, InputIt1 last1, InputIt2 first2, BinaryPredicate p)
     {
@@ -108,19 +164,15 @@ namespace pstd {
         return {first1, first2};
     };
 
+    /**
+     * Find the first differing position in two ranges. The equality operator is used.
+     */
     template<typename InputIt1, typename InputIt2>
-    constexpr pair<InputIt1, InputIt2> mismatch(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2)
+    constexpr pair<InputIt1, InputIt2> mismatch(InputIt1 first1, InputIt1 last1, InputIt2 first2)
     {
-        static_assert(is_input_iterator<InputIt1>::value, "Iterator must be an input iterator");
-        static_assert(is_input_iterator<InputIt2>::value, "Iterator must be an input iterator");
-
-        while(*first1 == *first2 and first1 != last1 and first2 != last2)
-        {
-            ++first1;
-            ++first2;
-        }
-        return {first1, first2};
+        return mismatch(first1, last1, first2, detail::equal());
     };
+
 
     template<typename InputIt1, typename InputIt2, typename BinaryPredicate>
     constexpr pair<InputIt1, InputIt2> mismatch(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2, BinaryPredicate p)
@@ -136,7 +188,21 @@ namespace pstd {
         return {first1, first2};
     };
 
+    template<typename InputIt1, typename InputIt2>
+    constexpr pair<InputIt1, InputIt2> mismatch(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2)
+    {
+        return mismatch(first1, last1, first2, last2, detail::equal());
+    };
+
+
     //equal
+    template<typename InputIt1, typename InputIt2, typename BinaryPredicate>
+    constexpr bool equal(InputIt1 first1, InputIt1 last1, InputIt2 first2, BinaryPredicate p)
+    {
+        static_assert(is_input_iterator<InputIt1>::value, "Iterator must be an input iterator");
+        static_assert(is_input_iterator<InputIt2>::value, "Iterator must be an input iterator");
+        return mismatch(first1, last1, first2, p).first == last1;
+    };
     template<typename InputIt1, typename InputIt2>
     constexpr bool equal(InputIt1 first1, InputIt1 last1, InputIt2 first2)
     {
@@ -145,13 +211,6 @@ namespace pstd {
         return mismatch(first1, last1, first2).first == last1;
     };
 
-    template<typename InputIt1, typename InputIt2, typename BinaryPredicate>
-    constexpr bool equal(InputIt1 first1, InputIt1 last1, InputIt2 first2, BinaryPredicate p)
-    {
-        static_assert(is_input_iterator<InputIt1>::value, "Iterator must be an input iterator");
-        static_assert(is_input_iterator<InputIt2>::value, "Iterator must be an input iterator");
-        return mismatch(first1, last1, first2, p).first == last1;
-    };
 
     template<typename InputIt1, typename InputIt2>
     constexpr bool equal(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2)
@@ -172,17 +231,6 @@ namespace pstd {
     };
 
     //find, find_if, find_if_not
-    template<typename InputIt, typename T>
-    constexpr InputIt find(InputIt first, InputIt last, T const& value)
-    {
-        static_assert(is_input_iterator<InputIt>::value, "Iterator must be an input iterator");
-        while(first != last and *first != value)
-        {
-            ++first;
-        }
-        return first;
-    };
-
     template<typename InputIt, class UnaryPredicate>
     constexpr InputIt find_if(InputIt first, InputIt last, UnaryPredicate p)
     {
@@ -193,6 +241,7 @@ namespace pstd {
         }
         return first;
     };
+
     template<typename InputIt, class UnaryPredicate>
     constexpr InputIt find_if_not(InputIt first, InputIt last, UnaryPredicate p)
     {
@@ -204,30 +253,15 @@ namespace pstd {
         return first;
     };
 
-    template<typename ForwardIt1, class ForwardIt2>
-    constexpr ForwardIt1 find_end(ForwardIt1 first, ForwardIt1 last, ForwardIt2 s_first, ForwardIt2 s_last)
+    template<typename InputIt, typename T>
+    constexpr InputIt find(InputIt first, InputIt last, T const& value)
     {
-        static_assert(is_forward_iterator<ForwardIt1>::value, "Iterator must be a forward input iterator");
-        static_assert(is_forward_iterator<ForwardIt2>::value, "Iterator must be a forward input iterator");
-
-        ForwardIt1 found_location = last;
-        auto slength = distance(s_first, s_last);
-        if(slength == 0) return last;
-        auto length = distance(first, last);
-        if(length < slength) return last;
-
-        auto search_last = first + (length - slength + 1);
-
-        while(first != search_last)
-        {
-            if(mismatch(first, last, s_first, s_last).second == s_last) //no mismatch
-            {
-                return first;
-            }
-            ++first;
-        }
-        return last;
+        return find_if(first, last, [&value](auto const& v){return v == value;});
     };
+
+
+    //find the last subsequence of [s_first, s_last) in [first, last).
+    // if not found, return last, otherwise iterator to beginning of sequence.
     template<typename ForwardIt1, class ForwardIt2, class BinaryPredicate>
     constexpr ForwardIt1 find_end(ForwardIt1 first, ForwardIt1 last, ForwardIt2 s_first, ForwardIt2 s_last, BinaryPredicate p)
     {
@@ -252,23 +286,10 @@ namespace pstd {
         }
         return last;
     };
-
-    template<typename ForwardIt1, typename ForwardIt2>
-    constexpr ForwardIt1 find_first_of(ForwardIt1 first, ForwardIt1 last, ForwardIt2 s_first, ForwardIt2 s_last)
+    template<typename ForwardIt1, class ForwardIt2>
+    constexpr ForwardIt1 find_end(ForwardIt1 first, ForwardIt1 last, ForwardIt2 s_first, ForwardIt2 s_last)
     {
-        static_assert(is_forward_iterator<ForwardIt1>::value, "Iterator must be a forward input iterator");
-        static_assert(is_forward_iterator<ForwardIt2>::value, "Iterator must be a forward input iterator");
-
-        //for every element in [first, lat), use it as the search term in s_first, s_last
-
-        while(first != last)
-        {
-            auto const& val = *first;
-            auto it = find(s_first, s_last, val);
-            if(it != s_last) return first;
-            ++first;
-        }
-        return first;
+        return find_end(first, last, s_first, s_last, detail::equal());
     };
 
     template<typename ForwardIt1, typename ForwardIt2, typename BinaryPredicate>
@@ -282,28 +303,21 @@ namespace pstd {
         while(first != last)
         {
             auto const& val = *first;
-            auto it = find(s_first, s_last, [&val, &p](auto const& v){return p(val, v);});
+            auto it = find_if(s_first, s_last, [&val, &p](auto const& v){return p(val, v);});
             if(it != s_last) return first;
             ++first;
         }
         return first;
     };
 
-    //ajacent find: find two consecutive equal elements
-    template<typename ForwardIt>
-    constexpr ForwardIt ajacent_find(ForwardIt first, ForwardIt last)
+    template<typename ForwardIt1, typename ForwardIt2>
+    constexpr ForwardIt1 find_first_of(ForwardIt1 first, ForwardIt1 last, ForwardIt2 s_first, ForwardIt2 s_last)
     {
-        static_assert(is_forward_iterator<ForwardIt>::value, "Iterator must be a forward input iterator");
-        if(first == last) return last;
-        ForwardIt nextfirst = first + 1;
-        while(nextfirst != last)
-        {
-            if(*nextfirst == *first) return first;
-            ++nextfirst;
-            ++first;
-        }
-        return last;
-    }
+        return find_first_of(first, last, s_first, s_last, detail::equal());
+    };
+
+
+    //ajacent find: find two consecutive equal elements
     template<typename ForwardIt, typename BinaryPredicate>
     constexpr ForwardIt ajacent_find(ForwardIt first, ForwardIt last, BinaryPredicate p)
     {
@@ -317,6 +331,11 @@ namespace pstd {
             ++first;
         }
         return last;
+    }
+    template<typename ForwardIt>
+    constexpr ForwardIt ajacent_find(ForwardIt first, ForwardIt last)
+    {
+        return ajacent_find(first, last, detail::equal());
     }
 
     template <typename InputIt, typename OutputIt>
@@ -474,72 +493,35 @@ namespace pstd {
         }
     };
     //remove, remove_if
-    template<class ForwardIt, class T>
-    constexpr ForwardIt remove(ForwardIt first, ForwardIt last, T const& value)
-    {
-        static_assert(is_forward_iterator<ForwardIt>::value, "first must be a forward iterator");
-        //move the iterator forward until we find the first non-match.
-        auto insert_point = find_if(first, last, [&value](auto const& v){return value != v;});
-        if(insert_point == last) //no removals
-        {
-            return last;
-        }
-        first = insert_point + 1;
-        while(first != last)
-        {
-            if(*first == value)
-            {
-                swap(*first, *insert_point);
-                ++insert_point;
-            }
-            ++first;
-        }
-        return insert_point;
-    };
     template<class ForwardIt, class UnaryPredicate>
     constexpr ForwardIt remove_if(ForwardIt first, ForwardIt last, UnaryPredicate p)
     {
         static_assert(is_forward_iterator<ForwardIt>::value, "first must be a forward iterator");
-        //move the iterator forward until we find the first non-match.
-        auto insert_point = find_if_not(first, last, p);
-        if(insert_point == last) //no removals
-        {
-            return last;
-        }
-        first = insert_point + 1;
-        while(first != last)
-        {
-            if(p(*first))
-            {
-                swap(*first, *insert_point);
-                ++insert_point;
-            }
-            ++first;
-        }
-        return insert_point;
+        first = find_if(first, last, p);
+        if (first != last)
+            for(ForwardIt i = first; ++i != last; )
+                if (!p(*i))
+                    *first++ = move(*i);
+        return first;
     };
+    template<class ForwardIt, class T>
+    constexpr ForwardIt remove(ForwardIt first, ForwardIt last, T const& value)
+    {
+        return remove_if(first, last, [&value](auto const& v){return v == value;});
+    };
+
     //remove_copy
+    template<class InputIt, class OutputIt, class UnaryPredicate>
+    constexpr OutputIt remove_copy(InputIt first, InputIt last,OutputIt d_first, UnaryPredicate p)
+    {
+        return copy_if(first, last, d_first, [&p](auto const& v){return not p(v);});
+    };
     template<class InputIt, class OutputIt, class T>
     constexpr OutputIt remove_copy(InputIt first, InputIt last, OutputIt d_first, T const& value)
     {
         return copy_if(first, last, d_first, [&value](auto const& v){return v != value;});
     };
 
-    template<class InputIt, class OutputIt, class UnaryPredicate>
-    constexpr OutputIt remove_copy(InputIt first, InputIt last,OutputIt d_first, UnaryPredicate p)
-    {
-        return copy_if(first, last, d_first, [&p](auto const& v){return not p(v);});
-    };
-
-    template<class ForwardIt, class T>
-    constexpr void replace(ForwardIt first, ForwardIt last, T const& old_value, T const& new_value)
-    {
-        while(first != last)
-        {
-            if(*first == old_value) *first = new_value;
-            ++first;
-        }
-    };
 
     template<class ForwardIt, class UnaryPredicate, class T>
     constexpr void replace_if(ForwardIt first, ForwardIt last, UnaryPredicate p, T const& new_value)
@@ -550,20 +532,12 @@ namespace pstd {
             ++first;
         }
     };
-
-    template<class InputIt, class OutputIt, class T>
-    constexpr OutputIt replace_copy(InputIt first, InputIt last, OutputIt d_first, T const& old_value, T const& new_value)
+    template<class ForwardIt, class T>
+    constexpr void replace(ForwardIt first, ForwardIt last, T const& old_value, T const& new_value)
     {
-        static_assert(is_input_iterator<InputIt>::value, "first must be input iterator");
-        while(first != last)
-        {
-            if(*first == old_value) *d_first = new_value;
-            else *d_first = *first;
-            ++d_first;
-            ++first;
-        }
-        return d_first;
+        return replace_if(first, last, [&old_value](auto const& v){return v == old_value;}, new_value);
     };
+
 
     template<class InputIt, class OutputIt, class UnaryPredicate, class T>
     constexpr OutputIt replace_copy_if(InputIt first, InputIt last, OutputIt d_first, UnaryPredicate p, T const& new_value)
@@ -577,6 +551,11 @@ namespace pstd {
             ++first;
         }
         return d_first;
+    };
+    template<class InputIt, class OutputIt, class T>
+    constexpr OutputIt replace_copy(InputIt first, InputIt last, OutputIt d_first, T const& old_value, T const& new_value)
+    {
+        return replace_copy_if(first, last, d_first, [&old_value](auto const& v){return v == old_value;}, new_value);
     };
 
     template<class ForwardIt1, class ForwardIt2>
@@ -664,27 +643,6 @@ namespace pstd {
     };
 
     //unique: collapse consecutive equal values
-    template<class ForwardIt>
-    constexpr ForwardIt unique(ForwardIt first, ForwardIt last)
-    {
-        static_assert(is_forward_iterator<ForwardIt>::value, "first must be forward iterator");
-        //find the first set of consecutve elements.
-        auto last_insert = ajacent_find(first, last);
-        if(last_insert == last) return last; //found no duplicates.
-        //look forward until we find something not equal to last_insert
-        first = last_insert + 1;
-        while(first != last)
-        {
-            if(*first != *last_insert) //we've found something new, so move it down.
-            {
-                ++last_insert;
-                *last_insert = move(*first);
-            }
-            ++first;
-        }
-        ++last_insert;
-        return last_insert;
-    }
     template<class ForwardIt, class BinaryPredicate>
     constexpr ForwardIt unique(ForwardIt first, ForwardIt last, BinaryPredicate p)
     {
@@ -706,26 +664,12 @@ namespace pstd {
         ++last_insert;
         return last_insert;
     }
-    template<class InputIt, class OutputIt>
-    constexpr InputIt unique_copy(InputIt first, InputIt last, OutputIt d_first)
+    template<class ForwardIt>
+    constexpr ForwardIt unique(ForwardIt first, ForwardIt last)
     {
-        static_assert(is_input_iterator<InputIt>::value, " InputIt must be input iterator");
-        auto last_unique= first;
-        *d_first = *first;
-        ++first;
-        ++d_first;
-        while(first != last)
-        {
-            if(*first != *last_unique)
-            {
-                *d_first = *first;
-                ++d_first;
-                last_unique = first;
-            }
-            ++first;
-        }
-        return d_first;
-    };
+        return unique(first, last, detail::equal());
+    }
+
     template<class InputIt, class OutputIt, class BinaryPredicate>
     constexpr InputIt unique_copy(InputIt first, InputIt last, OutputIt d_first, BinaryPredicate p)
     {
@@ -745,6 +689,11 @@ namespace pstd {
             ++first;
         }
         return d_first;
+    };
+    template<class InputIt, class OutputIt>
+    constexpr InputIt unique_copy(InputIt first, InputIt last, OutputIt d_first)
+    {
+        return unique_copy(first, last, d_first, detail::equal());
     };
 
     template<class InputIt, class UnaryPredicate>
@@ -894,21 +843,6 @@ namespace pstd {
         >::partition_point(first, last, p);
     };
 
-    template<class ForwardIt>
-    constexpr ForwardIt is_sorted_until(ForwardIt first, ForwardIt last)
-    {
-        static_assert(is_forward_iterator<ForwardIt>::value, "Iterator must be a forward iterator");
-
-        auto i = next(first);
-
-        while(i != last)
-        {
-            if(not (*first < *i)) return i;
-            ++first;
-            ++i;
-        }
-        return i;
-    }
     template<class ForwardIt, class Compare>
     constexpr ForwardIt is_sorted_until(ForwardIt first, ForwardIt last, Compare comp)
     {
@@ -925,31 +859,23 @@ namespace pstd {
         return i;
     };
     template<class ForwardIt>
-    constexpr bool is_sorted(ForwardIt first, ForwardIt last)
+    constexpr ForwardIt is_sorted_until(ForwardIt first, ForwardIt last)
     {
-        return is_sorted_until(first, last) == last;
+        return is_sorted_until(first, last, detail::less());
     }
+
     template<class ForwardIt, class Compare>
     constexpr bool is_sorted(ForwardIt first, ForwardIt last, Compare comp)
     {
         return is_sorted_until(first, last, comp) == last;
     };
-
-    //standard quicksort.
-    template<class RandomIt>
-    void sort(RandomIt first, RandomIt last)
+    template<class ForwardIt>
+    constexpr bool is_sorted(ForwardIt first, ForwardIt last)
     {
-        static_assert(is_random_access_iterator<RandomIt>::value, "Iterators must be random access");
-        if(first == last) return;
-        if(is_sorted(first, last)) return; //no use sorting a sorted array
-
-        auto pivot = *next(first,  distance(first, last)/2);
-        auto middle1 = partition(first, last, [&pivot](auto const& element){return element < pivot;});
-        auto middle2 = partition(middle1, last, [&pivot](auto const& element){return not(pivot < element);});
-        sort(first, middle1);
-        sort(middle2, last);
+        return is_sorted_until(first, last) == last;
     }
 
+    //standard quicksort.
     template<class RandomIt, class Compare>
     void sort(RandomIt first, RandomIt last, Compare comp)
     {
@@ -963,26 +889,13 @@ namespace pstd {
         sort(first, middle1);
         sort(middle2, last);
     };
-
-
+    template<class RandomIt>
+    void sort(RandomIt first, RandomIt last)
+    {
+        return sort(first, last, detail::less());
+    }
 
     //check for max heap.
-    template<class RandomIt>
-    RandomIt is_heap_until(RandomIt first, RandomIt last)
-    {
-        static_assert(is_random_access_iterator<RandomIt>::value, "Iterators must be random access");
-        const auto N = distance(first, last);
-
-        //heap property: h[i-1/2] >= h[i]
-        size_t i = 1;
-        for(; i < N; i++) //don't have to check root since it doesn't have a parent.
-        {
-            size_t parent = (i-1)/2;
-
-            if(*(first + parent) < *(first + i)) return (first + i);
-        }
-        return (first + i);
-    }
     template<class RandomIt, class Compare>
     RandomIt is_heap_until(RandomIt first, RandomIt last, Compare comp)
     {
@@ -999,43 +912,25 @@ namespace pstd {
         }
         return (first + i);
     }
-
     template<class RandomIt>
-    bool is_heap(RandomIt first, RandomIt last)
+    RandomIt is_heap_until(RandomIt first, RandomIt last)
     {
-        return is_heap_until(first, last) == last;
-    };
+        return is_heap_until(first, last, detail::less());
+    }
+
 
     template<class RandomIt, class Compare>
     bool is_heap(RandomIt first, RandomIt last, Compare comp)
     {
         return is_heap_until(first, last, comp) == last;
     };
+    template<class RandomIt>
+    bool is_heap(RandomIt first, RandomIt last)
+    {
+        return is_heap_until(first, last, detail::less());
+    };
 
     //element last-1 is the element to insert.
-    template<class RandomIt>
-    void push_heap(RandomIt first, RandomIt last)
-    {
-        static_assert(is_random_access_iterator<RandomIt>::value, "Iterators must be random access");
-        if(first == last) return;
-        if(next(first) == last) return;
-        auto elem = last-1;
-        while(elem != first)
-        {
-            const auto parent = first + (distance(first, elem) - 1)/2; parent != first;
-            //compare with parent
-            if(*parent < *elem)
-            {
-                iter_swap(parent, elem);
-                elem = parent;
-                continue;
-            }
-            else
-            {
-                break;
-            }
-        }
-    }
     template<class RandomIt, class Compare>
     void push_heap(RandomIt first, RandomIt last, Compare comp)
     {
@@ -1059,19 +954,10 @@ namespace pstd {
             }
         }
     };
-
     template<class RandomIt>
-    void make_heap(RandomIt first, RandomIt last)
+    void push_heap(RandomIt first, RandomIt last)
     {
-        static_assert(is_random_access_iterator<RandomIt>::value, "Iterators must be random access");
-
-        auto heap_end = first + 1; //start with one-element heap.
-
-        while(heap_end != last)
-        {
-            ++heap_end;  //add next element onto bottom of heap.
-            push_heap(first, heap_end);
-        }
+        push_heap(first, last, detail::less());
     }
 
     template<class RandomIt, class Compare>
@@ -1087,6 +973,12 @@ namespace pstd {
             push_heap(first, heap_end, comp);
         }
     };
+    template<class RandomIt>
+    void make_heap(RandomIt first, RandomIt last)
+    {
+        make_heap(first, last, detail::less());
+    }
+
 
     namespace detail
     {
@@ -1118,18 +1010,6 @@ namespace pstd {
         };
     }
 
-    template<class RandomIt>
-    void pop_heap(RandomIt first, RandomIt last)
-    {
-        static_assert(is_random_access_iterator<RandomIt>::value, "Iterators must be random access");
-        if(first == last) return;
-        if(first == last-1) return;
-
-        //replace root with the last element
-        --last;
-        iter_swap(first, last);
-        detail::percolate_heap(first, last, operator<);
-    }
     template<class RandomIt, class Compare>
     void pop_heap(RandomIt first, RandomIt last, Compare comp)
     {
@@ -1142,16 +1022,10 @@ namespace pstd {
         iter_swap(first, last);
         detail::percolate_heap(first, last, comp);
     }
-
     template<class RandomIt>
-    void sort_heap(RandomIt first, RandomIt last)
+    void pop_heap(RandomIt first, RandomIt last)
     {
-        static_assert(is_random_access_iterator<RandomIt>::value, "Iterators must be random access");
-        while(first != last)
-        {
-            pop_heap(first, last);
-            --last;
-        }
+        pop_heap(first, last, detail::less());
     }
 
     template<class RandomIt, class Compare>
@@ -1164,29 +1038,12 @@ namespace pstd {
             --last;
         }
     };
-
     template<class RandomIt>
-    void partial_sort(RandomIt first, RandomIt middle, RandomIt last)
+    void sort_heap(RandomIt first, RandomIt last)
     {
-        static_assert(is_random_access_iterator<RandomIt>::value, "Iterators must be random access");
-        if(first == last) return;
-        if(middle == first) return;
-        if(middle == last) sort(first, last);
-
-        auto rfirst = make_reverse_iterator(last);
-        auto rlast = make_reverse_iterator(first);
-        auto rmiddle = make_reverse_iterator(middle);
-        auto mdist = distance(first, middle);
-
-        auto compare = [](auto const& a, auto const& b){return not (a < b);};
-
-        make_heap(rfirst, rlast, compare);
-
-        for(size_t i = 0; i < mdist; i++)
-        {
-            pop_heap(rfirst, rlast, compare);
-        }
+        return sort_heap(first, last, detail::less());
     }
+
     template<class RandomIt, class Compare>
     void partial_sort(RandomIt first, RandomIt middle, RandomIt last, Compare comp)
     {
@@ -1209,41 +1066,13 @@ namespace pstd {
             pop_heap(rfirst, rlast, compare);
         }
     }
+    template<class RandomIt>
+    void partial_sort(RandomIt first, RandomIt middle, RandomIt last)
+    {
+        return partial_sort(first, middle, last, detail::less());
+    }
 
     //heapsort here.
-    template<class InputIt, class RandomIt>
-    RandomIt partial_sort_copy(InputIt first, InputIt last, RandomIt d_first, RandomIt d_last)
-    {
-        static_assert(is_input_iterator<InputIt>::value, "first&last must be input iterators");
-        static_assert(is_random_access_iterator<RandomIt>::value, "d_first and d_last must be random access iterators.");
-        if(first == last) return d_first;
-        if(d_first == d_last) return d_first;
-
-        auto dsize = distance(d_first, d_last);
-        auto heap_end = d_first;
-        //push some values into
-        while(first != last and heap_end != d_last)
-        {
-            *heap_end = *first;
-            ++first;
-            ++heap_end;
-        }
-        make_heap(d_first, heap_end);
-        //result is now a maximal heap. So if we replace the top(front) element and percolate, then
-        //eventually the largest elements will be removed.
-        while(first != last)
-        {
-            if(*first < *d_first)
-            {
-                *d_first = *first;
-                detail::percolate_heap(d_first, heap_end, operator<);
-
-            }
-            ++first;
-        }
-        sort_heap(d_first, heap_end);
-        return heap_end;
-    };
     template<class InputIt, class RandomIt, class Compare>
     RandomIt partial_sort_copy(InputIt first, InputIt last, RandomIt d_first, RandomIt d_last, Compare comp)
     {
@@ -1277,6 +1106,11 @@ namespace pstd {
         sort_heap(d_first, heap_end);
         return heap_end;
     };
+    template<class InputIt, class RandomIt>
+    RandomIt partial_sort_copy(InputIt first, InputIt last, RandomIt d_first, RandomIt d_last)
+    {
+        return partial_sort_copy(first, last, d_first, d_last, detail::less());
+    };
 
     template<class InputIt1, class InputIt2, class OutputIt, class Compare>
     constexpr OutputIt merge(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2, OutputIt d_first, Compare comp)
@@ -1309,10 +1143,11 @@ namespace pstd {
         }
         return d_first;
     };
+
     template<class InputIt1, class InputIt2, class OutputIt>
     OutputIt merge(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2, OutputIt d_first)
     {
-        return merge(first1, last1, first2, last2, d_first, operator<);
+        return merge(first1, last1, first2, last2, d_first, detail::less());
     };
 
     template<class BidirIt, class Compare>
@@ -1364,7 +1199,7 @@ namespace pstd {
     template<class BidirIt>
     void inplace_merge(BidirIt first, BidirIt midpoint, BidirIt last)
     {
-        return inplace_merge(first, midpoint, last, operator<);
+        return inplace_merge(first, midpoint, last, detail::less());
     };
 
     //use mergesort, with a temporary buffer for the displaced element.
@@ -1391,7 +1226,7 @@ namespace pstd {
     template<class RandomIt>
     void stable_sort(RandomIt first, RandomIt last)
     {
-        return stable_sort(first, last, operator<);
+        return stable_sort(first, last, detail::less());
     }
 
     namespace detail
@@ -1447,30 +1282,9 @@ namespace pstd {
     template<class RandomIt>
     void nth_element(RandomIt first, RandomIt nth, RandomIt last)
     {
-        return nth_element(first, nth, last, operator<);
+        return nth_element(first, nth, last, detail::less());
     }
 
-    template<class ForwardIt, class T>
-    ForwardIt lower_bound(ForwardIt first, ForwardIt last, T  const& val)
-    {
-        static_assert(is_forward_iterator<ForwardIt>::value, "Iterator must be a forward iterator");
-        auto count = distance(first, last);
-        while(count > 0)
-        {
-            auto it = first;
-            auto step = count/2;
-            advance(it, step);
-            if(*it < val)
-            {
-                first = ++it;
-                count -= step + 1;
-
-            }
-            else
-                count = step;
-        }
-        return first;
-    };
     template<class ForwardIt, class T, class Compare>
     ForwardIt lower_bound(ForwardIt first, ForwardIt last, T  const& val, Compare comp)
     {
@@ -1493,25 +1307,11 @@ namespace pstd {
         return first;
     };
     template<class ForwardIt, class T>
-    ForwardIt upper_bound(ForwardIt first, ForwardIt last, T  const& val)
+    ForwardIt lower_bound(ForwardIt first, ForwardIt last, T  const& val)
     {
-        static_assert(is_forward_iterator<ForwardIt>::value, "Iterator must be a forward iterator");
-        auto count = distance(first, last);
-        while(count > 0)
-        {
-            auto it = first;
-            auto step = count / 2;
-            advance(it, step);
-            if(not(val < *it))
-            {
-                first = ++it;
-                count -= step + 1;
-            }
-            else
-                count = step;
-        }
-        return first;
+        return lower_bound(first, last, val, detail::less());
     };
+
     template<class ForwardIt, class T, class Compare>
     ForwardIt upper_bound(ForwardIt first, ForwardIt last, T  const& val, Compare comp)
     {
@@ -1532,13 +1332,12 @@ namespace pstd {
         }
         return first;
     };
-
     template<class ForwardIt, class T>
-    bool binary_search(ForwardIt first, ForwardIt last, T const& value)
+    ForwardIt upper_bound(ForwardIt first, ForwardIt last, T  const& val)
     {
-        first = lower_bound(first, last, value);
-        return (not(first == last) and not (value < *first));
+        return upper_bound(first, last, val, detail::less());
     };
+
 
     template<class ForwardIt, class T, class Compare>
     bool binary_search(ForwardIt first, ForwardIt last, T const& value, Compare comp)
@@ -1546,16 +1345,21 @@ namespace pstd {
         first = lower_bound(first, last, value, comp);
         return (not(first == last) and not comp(value, *first));
     };
-
     template<class ForwardIt, class T>
-    pair<ForwardIt, ForwardIt> equal_range(ForwardIt first, ForwardIt last, T const& value)
+    bool binary_search(ForwardIt first, ForwardIt last, T const& value)
     {
-        return {lower_bound(first, last, value), upper_bound(first, last, value)};
+        return binary_search(first, last, value, detail::less());
     };
+
     template<class ForwardIt, class T, class Compare>
     pair<ForwardIt, ForwardIt> equal_range(ForwardIt first, ForwardIt last, T const& value, Compare comp)
     {
         return {lower_bound(first, last, value, comp), upper_bound(first, last, value, comp)};
+    };
+    template<class ForwardIt, class T>
+    pair<ForwardIt, ForwardIt> equal_range(ForwardIt first, ForwardIt last, T const& value)
+    {
+        return equal_range(first, last, value, detail::less());
     };
 
     template<class InputIt1, class InputIt2, class Compare>
@@ -1577,7 +1381,7 @@ namespace pstd {
     template<class InputIt1, class InputIt2>
     constexpr bool includes(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2)
     {
-        return includes(first1, last1, first2, last2, operator<);
+        return includes(first1, last1, first2, last2, detail::less());
     };
 
     template<class InputIt1, class InputIt2, class OutputIt, class Compare>
@@ -1607,7 +1411,7 @@ namespace pstd {
     template<class InputIt1, class InputIt2, class OutputIt>
     constexpr OutputIt set_difference(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2, OutputIt d_first)
     {
-        return set_difference(first1, last1, first2, last2, d_first, operator<);
+        return set_difference(first1, last1, first2, last2, d_first, detail::less());
     };
     template<class InputIt1, class InputIt2, class OutputIt, class Compare>
     constexpr OutputIt set_intersection(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2, OutputIt d_first, Compare comp)
@@ -1634,7 +1438,7 @@ namespace pstd {
     template<class InputIt1, class InputIt2, class OutputIt>
     constexpr OutputIt set_intersection(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2, OutputIt d_first)
     {
-        return set_intersection(first1, last1, first2, last2, d_first, operator<);
+        return set_intersection(first1, last1, first2, last2, d_first, detail::less());
     };
     template<class InputIt1, class InputIt2, class OutputIt, class Compare>
     constexpr OutputIt set_symmetric_difference(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2, OutputIt d_first, Compare comp)
@@ -1667,7 +1471,7 @@ namespace pstd {
     template<class InputIt1, class InputIt2, class OutputIt>
     constexpr OutputIt set_symmetric_difference(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2, OutputIt d_first)
     {
-        return set_symmetric_difference(first1, last1, first2, last2, d_first, operator<);
+        return set_symmetric_difference(first1, last1, first2, last2, d_first, detail::less());
     };
     template<class InputIt1, class InputIt2, class OutputIt, class Compare>
     constexpr OutputIt set_union(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2, OutputIt d_first, Compare comp)
@@ -1698,7 +1502,7 @@ namespace pstd {
     template<class InputIt1, class InputIt2, class OutputIt>
     constexpr OutputIt set_union(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2, OutputIt d_first)
     {
-        return set_union(first1, last1, first2, last2, d_first, operator<);
+        return set_union(first1, last1, first2, last2, d_first, detail::less());
     };
 
     template<class T>
@@ -1766,7 +1570,7 @@ namespace pstd {
     template<class ForwardIt>
     constexpr ForwardIt max_element(ForwardIt first, ForwardIt last)
     {
-        return max_element(first, last, operator<);
+        return max_element(first, last, detail::less());
     }
     template<class ForwardIt, class Compare>
     constexpr ForwardIt min_element(ForwardIt first, ForwardIt last, Compare comp)
@@ -1787,7 +1591,7 @@ namespace pstd {
     template<class ForwardIt>
     constexpr ForwardIt min_element(ForwardIt first, ForwardIt last)
     {
-        return min_element(first, last, operator<);
+        return min_element(first, last, detail::less());
     }
 
     template<class ForwardIt, class Compare>
@@ -1813,7 +1617,7 @@ namespace pstd {
     template<class ForwardIt>
     constexpr pair<ForwardIt, ForwardIt> minmax_element(ForwardIt first, ForwardIt last)
     {
-        return minmax_element(first, last, operator<);
+        return minmax_element(first, last, detail::less());
     };
     template<class InputIt1, class InputIt2, class Compare>
     bool lexographical_compare(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2, Compare comp)
@@ -1831,7 +1635,7 @@ namespace pstd {
     template<class InputIt1, class InputIt2>
     bool lexographical_compare(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2)
     {
-        return lexographical_compare(first1, last1, first2, last2, operator<);
+        return lexographical_compare(first1, last1, first2, last2, detail::less());
     };
     //todo: permutations.
 };

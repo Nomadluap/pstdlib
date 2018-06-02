@@ -94,57 +94,171 @@ TEST_CASE("find", "[algorithm]")
 TEST_CASE("find_if", "[algorithm]")
 {
     array<int, 10> a = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-    auto pred = [](int i){return i > 4};
+    auto pred = [](int i){return i > 4;};
     REQUIRE(find_if(begin(a), end(a), pred) == begin(a) + 5);
 }
 TEST_CASE("find_end", "[algorithm]")
 {
-
+    array<int, 10> a = {0,1,2,3,4,5,6,1,2,9};
+    array<int, 3> b = {1,2,3};
+    REQUIRE(find_end(begin(a), end(a), begin(b), end(b)) == begin(a) + 1);
+    REQUIRE(find_end(begin(a), end(a), begin(b), begin(b) + 2) == begin(a) + 7);
+    array<int, 3> c = {9,9,9};
+    REQUIRE(find_end(begin(a), end(a), begin(c), end(c)) == end(a));
 }
 TEST_CASE("find_first_of", "[algorithm]")
 {
+    array<int, 10> a = {0,1,2,3,4,5,6,7,8,9};
+    REQUIRE(find_first_of(begin(a), end(a), begin(a), end(a)) == begin(a));
+    array<int, 3> b = {7, 6, 5};
+    REQUIRE(find_first_of(begin(a), end(a), begin(b), end(b)) == begin(a) + 5);
+    array<int, 3> c = {10, 11, 12};
+    REQUIRE(find_first_of(begin(a), end(a), begin(c), end(c)) == end(a));
 }
 TEST_CASE("ajacent_find", "[algorithm]")
 {
+    array<int, 10> a = {0,1,2,3,3,5,6,7,8,9};
+    REQUIRE(ajacent_find(begin(a), end(a)) == begin(a) + 3);
+    array<int, 10> b = {0,1,2,3,4,5,6,7,8,9};
+    REQUIRE(ajacent_find(begin(a), end(a)) == end(a));
 }
 TEST_CASE("copy", "[algorithm]")
 {
+    array<int, 10> a = {0,1,2,3,4,5,6,7,8,9};
+    array<int, 10> b = {0,0,0,0,0,0,0,0,0,0};
+    REQUIRE(copy(begin(a), end(a), begin(b)) == end(b));
+    for(size_t i = 0; i < b.size(); i++)
+    {
+        REQUIRE(b[i] == i);
+    }
 }
 TEST_CASE("copy_if", "[algorithm]")
 {
+    array<int, 10> a = {0,1,2,3,4,5,6,7,8,9};
+    array<int, 10> b = {0,0,0,0,0,0,0,0,0,0};
+    REQUIRE(copy_if(begin(a), end(a), begin(b), [](int i){return (i % 2)==0;}) == begin(b) + 5);
+    for(size_t i = 0; i < 5; i++)
+    {REQUIRE(b[i] == 2*i);}
 }
 TEST_CASE("copy_n", "[algorithm]")
 {
+    array<int, 10> a = {0,1,2,3,4,5,6,7,8,9};
+    array<int, 10> b = {0,0,0,0,0,0,0,0,0,0};
+    REQUIRE(copy_n(begin(a), b.size(), begin(b)) == end(b));
+    for(size_t i = 0; i < b.size(); i++)
+    {
+        REQUIRE(b[i] == i);
+    }
 }
 TEST_CASE("copy_backward", "[algorithm]")
 {
+    array<int, 10> a = {0,1,2,3,4,5,6,7,8,9};
+    array<int, 10> b = {0,0,0,0,0,0,0,0,0,0};
+    REQUIRE(copy_backward(begin(a), end(a), end(b)) == begin(b));
+    for(size_t i = 0; i < b.size(); i++)
+    {
+        REQUIRE(b[i] == i);
+    }
 }
 TEST_CASE("move", "[algorithm]")
 {
+    array<int, 10> a = {0,1,2,3,4,5,6,7,8,9};
+    array<int, 10> b = {0,0,0,0,0,0,0,0,0,0};
+    REQUIRE(move(begin(a), end(a), begin(b)) == end(b));
+    for(size_t i = 0; i < b.size(); i++)
+    {
+        REQUIRE(b[i] == i);
+    }
 }
 TEST_CASE("move_backward", "[algorithm]")
 {
+    array<int, 10> a = {0,1,2,3,4,5,6,7,8,9};
+    array<int, 10> b = {0,0,0,0,0,0,0,0,0,0};
+    REQUIRE(move_backward(begin(a), end(a), end(b)) == begin(b));
+    for(size_t i = 0; i < b.size(); i++)
+    {
+        REQUIRE(b[i] == i);
+    }
 }
 TEST_CASE("fill", "[algorithm]")
 {
+    array<int, 10> b = {0,0,0,0,0,0,0,0,0,0};
+    fill(begin(b), end(b), 3);
+    for(auto i: b)
+    {
+        REQUIRE(i == 3);
+    }
 }
 TEST_CASE("fill_n", "[algorithm]")
 {
+    array<int, 10> b = {0,0,0,0,0,0,0,0,0,0};
+    fill_n(begin(b), 5, 3);
+    for(size_t i = 0; i < 10; i++)
+    {
+        if(i < 5) REQUIRE(b[i] == 3);
+        else REQUIRE(b[i] == 0);
+    }
 }
 TEST_CASE("transform", "[algorithm]")
 {
+    array<int, 10> a = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    array<int, 10> b = {};
+    array<int, 10> c = {0, 2, 4, 6, 8, 10, 12, 14, 16, 18};
+    REQUIRE(transform(begin(a), end(a), begin(b), [](int i){return 2*i;}) == end(b));
+    for(size_t i = 0; i < 10; i++)
+    {
+        REQUIRE(b[i] == c[i]);
+    }
 }
 TEST_CASE("generate", "[algorithm]")
 {
-}
-TEST_CASE("remove", "[algorithm]")
-{
+    array<int, 10> b = {};
+    int n = 0;
+    generate(begin(b), end(b), [&n](){return n++;});
+    for(size_t i = 0; i < 10; i++)
+    {
+        REQUIRE(b[i] == i);
+    }
+    n = 0;
+    generate(begin(b), end(b), [&n](){return 2*n++;});
+    for(size_t i = 0; i < 10; i++)
+    {
+        REQUIRE(b[i] == 2*i);
+    }
 }
 TEST_CASE("remove_if", "[algorithm]")
 {
+    array<int, 10> a = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    auto even = [](int i){return (i%2)==0;};
+    auto it = remove_if(begin(a), end(a), even);
+    REQUIRE(it == begin(a) + 5);
+    for(size_t i = 0; i < 5; i++)
+    {
+        REQUIRE(even(a[i]) == false);
+        REQUIRE(a[i] == 2*i+1);
+    }
 }
+
 TEST_CASE("remove_copy", "[algorithm]")
 {
+    array<int, 10> a = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    array<int, 10> b = {};
+    for(int i: b) REQUIRE(i == 0);
+    auto even = [](int i){return (i%2)== 0;};
+
+    auto it = remove_copy(begin(a), end(a), begin(b), even);
+    REQUIRE(it == begin(b)+5);
+
+    for(size_t i = 0; i < 5; i++)
+    {
+        INFO("i=" << i);
+        REQUIRE(even(b[i]) == false);
+    }
+    for(size_t i = 5; i < 10; i++)
+    {
+        INFO("i=" << i);
+        REQUIRE(b[i] == 0);
+    }
 }
 TEST_CASE("replace", "[algorithm]")
 {
