@@ -6,6 +6,39 @@
 
 using namespace pstd;
 
+namespace pstd
+{
+    template<typename T, size_t N>
+    static std::ostream& operator<<(std::ostream& os, array<T, N> const& arr)
+    {
+        os << "[";
+        for(size_t i = 0; i < N-1; i++)
+        {
+            os << arr[i] << ", ";
+        }
+        os << arr[N-1] << "]";
+        return os;
+    }
+}
+
+
+
+namespace
+{
+    template<typename T, size_t N>
+    array<T, N> random_array()
+    {
+        array<T, N> out;
+        for(auto& i: out)
+        {
+            i = static_cast<T>(rand());
+        }
+        return out;
+    }
+
+
+}
+
 TEST_CASE("all_of", "[algorithm]")
 {
     array<int, 5> a = {1, 1, 1, 1, 1};
@@ -681,17 +714,155 @@ TEST_CASE("unique", "[algorithm]")
 {
     SECTION("already unique")
     {
-        array<int, 
+        array<int, 10> a{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+        auto ret = unique(begin(a), end(a));
+
+        REQUIRE(ret == end(a));
+
+        for(int i = 0; i < 10; i++)
+        {
+            REQUIRE(a[i] == i);
+        }
+    }
+    SECTION("double entries")
+    {
+        array<int, 20> a{0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9};
+
+        auto ret = unique(begin(a), end(a));
+        REQUIRE(ret == begin(a)+10);
+
+        for(int i = 0; i < 10; i++)
+        {
+            REQUIRE(a[i] == i);
+        }
+    }
+    SECTION("single")
+    {
+        array<int, 1> a{1};
+        auto ret = unique(begin(a), end(a));
+        REQUIRE(ret == end(a));
+        REQUIRE(a[0] == 1);
+    }
+    SECTION("single_repitition")
+    {
+        array<int, 10> a{0, 1, 2, 2, 4, 5, 6, 7, 8, 9};
+        auto ret = unique(begin(a), end(a));
+        REQUIRE(ret == begin(a)+9);
+        REQUIRE(a[0] == 0);
+        REQUIRE(a[1] == 1);
+        REQUIRE(a[2] == 2);
+        REQUIRE(a[3] == 4);
+        REQUIRE(a[4] == 5);
+        REQUIRE(a[5] == 6);
+        REQUIRE(a[6] == 7);
+        REQUIRE(a[7] == 8);
+        REQUIRE(a[8] == 9);
+    }
+    SECTION("separator")
+    {
+        array<int, 7> a = {1, 1, 1, 2, 1, 1, 1};
+        auto ret = unique(begin(a), end(a));
+        REQUIRE(ret == begin(a)+3);
+        REQUIRE(a[0] == 1);
+        REQUIRE(a[1] == 2);
+        REQUIRE(a[2] == 1);
+    }
+    SECTION("empty")
+    {
+        array<int, 0> a = {};
+        auto ret = unique(begin(a), end(a));
+        REQUIRE(ret == end(a));
     }
 }
 TEST_CASE("unique_copy", "[algorithm]")
 {
+    const array<int, 23> source{0, 1, 2, 3, 3, 3, 4, 5, 5, 6, 7, 7, 7, 7, 7, 7, 8, 9, 9, 9, 9, 9, 9};
+
+    array<int, 23> dest = {};
+
+    auto ret = unique_copy(begin(source), end(source), begin(dest));
+    REQUIRE(ret == begin(dest)+10);
+    for(int i = 0; i < 10; i++)
+    {
+        REQUIRE(dest[i] == i);
+    }
+
 }
 TEST_CASE("is_partitioned", "[algorithm]")
 {
+    SECTION("less_than")
+    {
+        array<int, 10> a = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+        for(int comparison = 0; comparison < 10; comparison++)
+        {
+            INFO("comp value == " << comparison);
+            auto ret = is_partitioned(begin(a), end(a), [comparison](int i)
+            {
+                return i < comparison;
+            });
+            REQUIRE(ret == true);
+        }
+    }
+    SECTION("empty")
+    {
+        array<int, 0> a{};
+        auto ret = is_partitioned(begin(a), end(a), [](int i){return (i<5);});
+        REQUIRE(ret == true);
+    }
+    SECTION("always_true")
+    {
+        array<int, 10> a = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+        auto ret = is_partitioned(begin(a), end(a), [](int i){return true;});
+        REQUIRE(ret == true);
+    }
+    SECTION("always false")
+    {
+        array<int, 10> a = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+        auto ret = is_partitioned(begin(a), end(a), [](int i){return false;});
+        REQUIRE(ret == true);
+    }
+    SECTION("bad start")
+    {
+        array<int, 10> a = {0, 1, 2, 7, 4, 5, 6, 7, 8, 9};
+
+        auto ret = is_partitioned(begin(a), end(a), [](int i)
+        {
+            return i < 5;
+        });
+
+        REQUIRE(ret == false);
+    }
+    SECTION("bad end")
+    {
+        array<int, 10> a = {0, 1, 2, 3, 4, 5, 6, 3, 8, 9};
+
+        auto ret = is_partitioned(begin(a), end(a), [](int i)
+        {
+            return i < 5;
+        });
+        REQUIRE(ret == false);
+    }
 }
 TEST_CASE("partition", "[algorithm]")
 {
+    SECTION("Random tests")
+    {
+        for(int i = 0; i < 100; i++)
+        {
+            auto arr = random_array<int, 10>();
+            INFO("array=" << arr);
+            const auto partition_point = arr[0];
+            const auto pred = [partition_point](int i)
+            {
+                return i < partition_point;
+            };
+            partition(begin(arr), end(arr), pred);
+
+            REQUIRE(is_partitioned(begin(arr), end(arr), pred));
+        }
+    }
+
 }
 TEST_CASE("partition_copy", "[algorithm]")
 {

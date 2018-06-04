@@ -841,10 +841,22 @@ namespace pstd {
         return unique_copy(first, last, d_first, detail::equal());
     };
 
+    /**
+     * Returns true if all elements in the range [first, last) that satisfy the predicate p appear before
+     * all elements that do not. Also returns true on an empty range.
+     * @tparam InputIt Input iterator type
+     * @tparam UnaryPredicate Unary predicate type.
+     * @param first Start of range
+     * @param last End of range
+     * @param p Partition predicate.
+     * @return True if all elements for which p(e) == true appear before elements for which p(e) == false. Otherwise,
+     * returns false.
+     */
     template<class InputIt, class UnaryPredicate>
     constexpr bool is_partitioned(InputIt first, InputIt last, UnaryPredicate p)
     {
         static_assert(is_input_iterator<InputIt>::value, " InputIt must be input iterator");
+        static_assert(detail::is_unary_predicate_v<UnaryPredicate, InputIt>, "p must be callable with iterator value type");
         if(first == last) return true;
         bool reached_partition = false; //set to true on the first false result.
         while(not(first == last))
@@ -862,8 +874,11 @@ namespace pstd {
     constexpr ForwardIt partition(ForwardIt first, ForwardIt last, UnaryPredicate p)
     {
         static_assert(is_forward_iterator<ForwardIt>::value, "ForwardIt must be a forward iterator");
+        static_assert(detail::is_unary_predicate_v<UnaryPredicate, ForwardIt>, "p must be a unary predicate on ForwardIt");
+
+        //advance first to first false item.
         first = find_if_not(first, last, p);
-        if(first == last) return first;
+        if(first == last) return first; //no false items, so nothing to do here.
 
         for(auto i = next(first); not(i == last); ++i)
         {
