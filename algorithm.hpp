@@ -38,6 +38,21 @@ namespace pstd {
             }
         };
 
+        template<typename BinaryPredicate, typename InputIt1, typename InputIt2>
+        constexpr static bool is_binary_predicate_v = is_invocable_r<
+            BinaryPredicate,
+            bool,  // result convertible to bool
+            typename iterator_traits<InputIt1>::value_type const&, //takes references to iterator values types.
+            typename iterator_traits<InputIt2>::value_type const&
+        >::value;
+
+        template<typename UnaryPredicate, typename InputIt>
+        constexpr static bool is_unary_predicate_v = is_invocable_r<
+            UnaryPredicate,
+            bool,
+            typename iterator_traits<InputIt>::value_type const&
+        >::value;
+
     }
 
     /**
@@ -53,7 +68,7 @@ namespace pstd {
     {
         static_assert(is_input_iterator<InputIter>::value, "Iterator must be an input iterator");
 
-        while(first != last)
+        while(not(first == last))
         {
             if(not p(*first)) return false;
             ++first;
@@ -73,7 +88,7 @@ namespace pstd {
     constexpr bool any_of(InputIter first, InputIter last, UnaryPredicate p)
     {
         static_assert(is_input_iterator<InputIter>::value, "Iterator must be an input iterator");
-        while(first != last)
+        while(not(first == last))
         {
             if(p(*first)) return true;
             ++first;
@@ -100,7 +115,7 @@ namespace pstd {
     constexpr UnaryFunction for_each(InputIt first, InputIt last, UnaryFunction f)
     {
         static_assert(is_input_iterator<InputIt>::value, "Iterator must be an input iterator");
-        while(first != last)
+        while(not(first == last))
         {
             f(*first);
             ++first;
@@ -117,7 +132,7 @@ namespace pstd {
         static_assert(is_input_iterator<InputIt>::value, "Iterator must be an input iterator");
 
         typename iterator_traits<InputIt>::difference_type n = 0;
-        while(first != last)
+        while(not(first == last))
         {
             auto const& val = *first;
             if(p(val)) n++;
@@ -156,7 +171,7 @@ namespace pstd {
         static_assert(is_input_iterator<InputIt1>::value, "Iterator must be an input iterator");
         static_assert(is_input_iterator<InputIt2>::value, "Iterator must be an input iterator");
 
-        while(p(*first1, *first2) and first1 != last1)
+        while(p(*first1, *first2) and not(first1 == last1))
         {
             ++first1;
             ++first2;
@@ -180,7 +195,7 @@ namespace pstd {
         static_assert(is_input_iterator<InputIt1>::value, "Iterator must be an input iterator");
         static_assert(is_input_iterator<InputIt2>::value, "Iterator must be an input iterator");
 
-        while(p(*first1, *first2) and first1 != last1 and first2 != last2)
+        while(p(*first1, *first2) and not(first1 == last1) and not(first2 == last2))
         {
             ++first1;
             ++first2;
@@ -235,7 +250,7 @@ namespace pstd {
     constexpr InputIt find_if(InputIt first, InputIt last, UnaryPredicate p)
     {
         static_assert(is_input_iterator<InputIt>::value, "Iterator must be an input iterator");
-        while(first != last and not p(*first))
+        while(not(first == last) and not p(*first))
         {
             ++first;
         }
@@ -246,7 +261,7 @@ namespace pstd {
     constexpr InputIt find_if_not(InputIt first, InputIt last, UnaryPredicate p)
     {
         static_assert(is_input_iterator<InputIt>::value, "Iterator must be an input iterator");
-        while(first != last and p(*first))
+        while(not(first == last) and p(*first))
         {
             ++first;
         }
@@ -262,29 +277,45 @@ namespace pstd {
 
     //find the last subsequence of [s_first, s_last) in [first, last).
     // if not found, return last, otherwise iterator to beginning of sequence.
+    /**
+     * Find the first sequence of [s_first, s_last) in [first, last).
+     * @tparam ForwardIt1 Iterator type for search range
+     * @tparam ForwardIt2  Iterator type for needle range
+     * @tparam BinaryPredicate An operation to compare elements of the search and needle range.
+     * @param first First element of the search range
+     * @param last End fo teh search range
+     * @param s_first First element of the needle range
+     * @param s_last End of the needle range
+     * @param p Function to compare search and needle elements.
+     * @return  If the subsequence is found, then return an iterator to the first element of the sequence. Otherwise, if
+     * the sequence is not found, return last. If the size of [s_first, s_last) is zero, then last is returned. If the
+     * size of the needle range is larger than the search range, then return last.
+     */
     template<typename ForwardIt1, class ForwardIt2, class BinaryPredicate>
     constexpr ForwardIt1 find_end(ForwardIt1 first, ForwardIt1 last, ForwardIt2 s_first, ForwardIt2 s_last, BinaryPredicate p)
     {
         static_assert(is_forward_iterator<ForwardIt1>::value, "Iterator must be a forward input iterator");
         static_assert(is_forward_iterator<ForwardIt2>::value, "Iterator must be a forward input iterator");
 
-        ForwardIt1 found_location = last;
+        ForwardIt1 found_location = last; // if we don't find anything then return last.
         auto slength = distance(s_first, s_last);
         if(slength == 0) return last;
+
         auto length = distance(first, last);
         if(length < slength) return last;
 
         auto search_last = first + (length - slength + 1);
 
-        while(first != search_last)
+        while(not(first == search_last))
         {
             if(mismatch(first, last, s_first, s_last, p).second == s_last) //no mismatch
             {
-                return first;
+                found_location = first;
             }
             ++first;
         }
-        return last;
+
+        return found_location;
     };
     template<typename ForwardIt1, class ForwardIt2>
     constexpr ForwardIt1 find_end(ForwardIt1 first, ForwardIt1 last, ForwardIt2 s_first, ForwardIt2 s_last)
@@ -300,11 +331,11 @@ namespace pstd {
 
         //for every element in [first, lat), use it as the search term in s_first, s_last
 
-        while(first != last)
+        while(not(first == last))
         {
             auto const& val = *first;
             auto it = find_if(s_first, s_last, [&val, &p](auto const& v){return p(val, v);});
-            if(it != s_last) return first;
+            if(not(it == s_last)) return first;
             ++first;
         }
         return first;
@@ -324,7 +355,7 @@ namespace pstd {
         static_assert(is_forward_iterator<ForwardIt>::value, "Iterator must be a forward input iterator");
         if(first == last) return last;
         ForwardIt nextfirst = first + 1;
-        while(nextfirst != last)
+        while(not(nextfirst == last))
         {
             if(p(*first, *nextfirst)) return first;
             ++nextfirst;
@@ -342,7 +373,7 @@ namespace pstd {
     constexpr OutputIt copy(InputIt first, InputIt last, OutputIt d_first)
     {
         static_assert(is_input_iterator<InputIt>::value, "Iterator must be a input iterator");
-        while(first != last)
+        while(not(first == last))
         {
             *d_first = *first;
             ++d_first;
@@ -354,7 +385,7 @@ namespace pstd {
     constexpr OutputIt copy_if(InputIt first, InputIt last, OutputIt d_first, UnaryPredicate p)
     {
         static_assert(is_input_iterator<InputIt>::value, "Iterator must be a input iterator");
-        while(first != last)
+        while(not(first == last))
         {
             if(p(*first))
             {
@@ -397,7 +428,7 @@ namespace pstd {
     {
         static_assert(is_input_iterator<InputIt>::value, "first and last must be input iterators");
 
-        while(first != last)
+        while(not(first == last))
         {
             *d_first = move(*first);
             ++d_first;
@@ -423,7 +454,7 @@ namespace pstd {
     {
         static_assert(is_forward_iterator<ForwardIt>::value, "first must be a forward iterator");
 
-        while(first != last)
+        while(not(first == last))
         {
             *first = value;
             ++first;
@@ -446,7 +477,7 @@ namespace pstd {
     constexpr OutputIt transform(InputIt first, InputIt last, OutputIt d_first, UnaryOperation op)
     {
         static_assert(is_input_iterator<InputIt>::value, "first must be input iterator");
-        while(first != last)
+        while(not(first == last))
         {
             *d_first = op(*first);
             ++d_first;
@@ -460,7 +491,7 @@ namespace pstd {
     {
         static_assert(is_input_iterator<InputIt1>::value, "first1 must be input iterator");
         static_assert(is_input_iterator<InputIt2>::value, "first2 must be input iterator");
-        while(first1 != last1)
+        while(not(first1 == last1))
         {
             *d_first = op(*first1, *first2);
             ++d_first;
@@ -475,7 +506,7 @@ namespace pstd {
     constexpr void generate(ForwardIt first, ForwardIt last, Generator gen)
     {
         static_assert(is_forward_iterator<ForwardIt>::value, "first must be a forward iterator");
-        while(first != last)
+        while(not(first == last))
         {
             *first = gen();
             ++first;
@@ -494,12 +525,12 @@ namespace pstd {
     };
     //remove, remove_if
     template<class ForwardIt, class UnaryPredicate>
-    constexpr ForwardIt remove_if(ForwardIt first, ForwardIt last, UnaryPredicate p)
+    constexpr ForwardIt remove_if(ForwardIt first, ForwardIt last, UnaryPredicate p )
     {
         static_assert(is_forward_iterator<ForwardIt>::value, "first must be a forward iterator");
         first = find_if(first, last, p);
-        if (first != last)
-            for(ForwardIt i = first; ++i != last; )
+        if (not(first == last))
+            for(ForwardIt i = first; not(++i == last); )
                 if (!p(*i))
                     *first++ = move(*i);
         return first;
@@ -512,26 +543,40 @@ namespace pstd {
 
     //remove_copy
     template<class InputIt, class OutputIt, class UnaryPredicate>
-    constexpr OutputIt remove_copy(InputIt first, InputIt last,OutputIt d_first, UnaryPredicate p)
+    constexpr OutputIt remove_copy_if(InputIt first, InputIt last,OutputIt d_first, UnaryPredicate p)
     {
         return copy_if(first, last, d_first, [&p](auto const& v){return not p(v);});
     };
     template<class InputIt, class OutputIt, class T>
     constexpr OutputIt remove_copy(InputIt first, InputIt last, OutputIt d_first, T const& value)
     {
-        return copy_if(first, last, d_first, [&value](auto const& v){return v != value;});
+        return copy_if(first, last, d_first, [&value](auto const& v){return not(v == value);});
     };
 
 
+    /**
+     * Replace all values in [first, last) for which the predicate p returns true with new_value.
+     * @tparam ForwardIt Iterator type
+     * @tparam UnaryPredicate Predicate function type
+     * @tparam T Value type. Iterator type must be dereference-assignable by T.
+     * @param first Start of range
+     * @param last End of range
+     * @param p Predicate function. Return value must be coercible to bool.
+     * @param new_value Value to assign to *it when p(*it) returns true.
+     */
     template<class ForwardIt, class UnaryPredicate, class T>
     constexpr void replace_if(ForwardIt first, ForwardIt last, UnaryPredicate p, T const& new_value)
     {
-        while(first != last)
+        while(not(first == last))
         {
-            if(p(*first)) *first = new_value;
+            if(static_cast<bool>(p(*first))) *first = new_value;
             ++first;
         }
     };
+
+    /**
+     * Replace all instances of old_value in range [first, last) with new_value.
+     */
     template<class ForwardIt, class T>
     constexpr void replace(ForwardIt first, ForwardIt last, T const& old_value, T const& new_value)
     {
@@ -539,11 +584,25 @@ namespace pstd {
     };
 
 
+    /**
+     * Copy elements from a range into a new range, replacing certain elements with a new value.
+     * @tparam InputIt Input iterator type
+     * @tparam OutputIt Output iterator type.
+     * @tparam UnaryPredicate Predicate type
+     * @tparam T New value type. Must be assignable to *d_first.
+     * @param first Start of source range.
+     * @param last End of source range.
+     * @param d_first Start of destination range
+     * @param p Predicate. If p(*it) returns false, then *it is copied. Otherwise, if p(*it) returns true, then new_value
+     * is copied instead
+     * @param new_value New value to be used when p(*it) returns true. Must be assignable to *d_first.
+     * @return Iterator to the end of the destination range.
+     */
     template<class InputIt, class OutputIt, class UnaryPredicate, class T>
     constexpr OutputIt replace_copy_if(InputIt first, InputIt last, OutputIt d_first, UnaryPredicate p, T const& new_value)
     {
         static_assert(is_input_iterator<InputIt>::value, "first must be input iterator");
-        while(first != last)
+        while(not(first == last))
         {
             if(p(*first)) *d_first = new_value;
             else *d_first = *first;
@@ -552,18 +611,42 @@ namespace pstd {
         }
         return d_first;
     };
+
+
+    /**
+     * Copy elements from a range into a new range, replacing certain elements with a new value.
+     * @tparam InputIt Input iterator type
+     * @tparam OutputIt Output iterator type.
+     * @tparam T New value type. Must be assignable to *d_first.
+     * @param first Start of source range.
+     * @param last End of source range.
+     * @param d_first Start of destination range
+     * @param old_value Value that will be replaced in the new range. Any values in the source range comaring equal to
+     * this value will be replaced with new_value.
+     * @param new_value New value to be used when (*it == old_value) returns true. Must be assignable to *d_first.
+     * @return Iterator to the end of the destination range.
+     */
     template<class InputIt, class OutputIt, class T>
     constexpr OutputIt replace_copy(InputIt first, InputIt last, OutputIt d_first, T const& old_value, T const& new_value)
     {
         return replace_copy_if(first, last, d_first, [&old_value](auto const& v){return v == old_value;}, new_value);
     };
 
+    /**
+     * Swap the two ranges. Calls std::swap on each corresponding element in [first1, last1) and [first2, first2+ distance(last1, first1) )
+     * @tparam ForwardIt1 First range iterator type
+     * @tparam ForwardIt2  Second range iterator type
+     * @param first1  Start of first range
+     * @param last1  End of first range
+     * @param first2  Start of second range
+     * @return  End of second range.
+     */
     template<class ForwardIt1, class ForwardIt2>
     constexpr ForwardIt2 swap_ranges(ForwardIt1 first1, ForwardIt1 last1, ForwardIt2 first2 )
     {
         static_assert(is_forward_iterator<ForwardIt1>::value, "first1 must be forward iterator");
         static_assert(is_forward_iterator<ForwardIt2>::value, "first2 must be forward iterator");
-        while(first1 != last1)
+        while(not(first1 == last1))
         {
             swap(*first1, *first2);
             ++first1;
@@ -577,14 +660,14 @@ namespace pstd {
     {
         static_assert(is_forward_iterator<ForwardIt1>::value, "first1 must be forward iterator");
         static_assert(is_forward_iterator<ForwardIt2>::value, "first2 must be forward iterator");
-        if(a != b) swap(*a, *b);
+        if(not(a==b)) swap(*a, *b);
     };
 
     template<class BidirIt>
     constexpr void reverse(BidirIt first, BidirIt last)
     {
         static_assert(is_bidirectional_iterator<BidirIt>::value, "first must be a bidirectional iterator");
-        while((first != last) and (first != --last))
+        while(not(first == last) and not(first == --last))
         {
             iter_swap(first, last);
             ++first;
@@ -592,10 +675,10 @@ namespace pstd {
     }
 
     template<class BidirIt, class OutputIt>
-    constexpr void reverse_copy(BidirIt first, BidirIt last, OutputIt d_first)
+    constexpr OutputIt reverse_copy(BidirIt first, BidirIt last, OutputIt d_first)
     {
         static_assert(is_bidirectional_iterator<BidirIt>::value, "first must be a bidirectional iterator");
-        while(first != last)
+        while(not(first == last))
         {
             *d_first = *(--last);
             ++d_first;
@@ -604,11 +687,19 @@ namespace pstd {
     };
 
     //rotate n_first left to first.
+    /**
+     * Left-rotate the range [first, last) such that the element at n_first becomes first, and n_first-1 becomes last.
+     * @tparam ForwardIt Iterator type
+     * @param first Start of range.
+     * @param n_first Element that will be rotated to the first position in the range.
+     * @param last End of the range.
+     * @return the iterator equal to first+(last-n_first); (ie. the new position of  the value that was at first)
+     */
     template<class ForwardIt>
     constexpr ForwardIt rotate(ForwardIt first, ForwardIt n_first, ForwardIt last)
     {
         static_assert(is_forward_iterator<ForwardIt>::value, "first must be a forward iterator");
-        if(first == n_first) return last;
+        if(first == n_first) return first;
         if(n_first == last) return last;
 
         ForwardIt next = n_first;
@@ -620,10 +711,10 @@ namespace pstd {
             ++next;
             if(first == n_first) n_first = next;
         }
-        while(next != last);
+        while(not(next == last));
 
         ForwardIt ret = first;
-        for(next = n_first; next != last; )
+        for(next = n_first; not(next == last); )
         {
             iter_swap(first, next);
             ++first;
@@ -634,6 +725,19 @@ namespace pstd {
         return ret;
     }
 
+    /**
+     * Copies the elements in [first, last) to another range beginning with d_first, such
+     * that the element in position n_first in the source range is in the first position
+     * in the destination range, and the first element in the source range and the element
+     * at (n_first-1) becomes the last element in the output range.
+     * @tparam ForwardIt Source iterator type
+     * @tparam OutputIt Destination iterator type
+     * @param first First element of the source range
+     * @param n_first  element of the source range that will be first in the destination range.
+     * @param last End of the source range
+     * @param d_first Start of the destination range.
+     * @return End of the destination range.
+     */
     template<class ForwardIt, class OutputIt>
     constexpr OutputIt rotate_copy(ForwardIt first, ForwardIt n_first, ForwardIt last, OutputIt d_first)
     {
@@ -643,6 +747,27 @@ namespace pstd {
     };
 
     //unique: collapse consecutive equal values
+    /**
+     * Eliminates all but the first element from every consecutive group of equivalent elements
+     * from the range [first, last) and returns a past-the-end iterator for the new logical
+     * end fo the range.
+     *
+     * Removing is done by shifting the elements in the range in such a way thtat elements to
+     * be erased are overwritten. Relative order of the elements that remain is preserved and the
+     * physical size of the container is unchanged. Iterators pointing to an element between the new
+     * new logical end and the physical end of the range are still dereferencable, but the elements
+     * themselves have unspecified values.
+     *
+     * Typically, a call to unique is usually followed by a call to the container's erase method,
+     * which erases the unspecified values and shrinks the container size.
+     *
+     * @tparam ForwardIt Forward iterator type
+     * @tparam BinaryPredicate Binary predicate type
+     * @param first Start of the range.
+     * @param last End of the range
+     * @param p A binary predicate used to determine equality. Should return a result coercible to bool.
+     * @return An end iterator for the result range.
+     */
     template<class ForwardIt, class BinaryPredicate>
     constexpr ForwardIt unique(ForwardIt first, ForwardIt last, BinaryPredicate p)
     {
@@ -652,7 +777,7 @@ namespace pstd {
         if(last_insert == last) return last; //found no duplicates.
         //look forward until we find something not equal to last_insert
         first = last_insert + 1;
-        while(first != last)
+        while(not(first == last))
         {
             if(not p(*first, *last_insert)) //we've found something new, so move it down.
             {
@@ -664,6 +789,26 @@ namespace pstd {
         ++last_insert;
         return last_insert;
     }
+
+    /**
+     * Eliminates all but the first element from every consecutive group of equivalent elements
+     * from the range [first, last) and returns a past-the-end iterator for the new logical
+     * end fo the range. The elements are compared using operator==
+     *
+     * Removing is done by shifting the elements in the range in such a way thtat elements to
+     * be erased are overwritten. Relative order of the elements that remain is preserved and the
+     * physical size of the container is unchanged. Iterators pointing to an element between the new
+     * new logical end and the physical end of the range are still dereferencable, but the elements
+     * themselves have unspecified values.
+     *
+     * Typically, a call to unique is usually followed by a call to the container's erase method,
+     * which erases the unspecified values and shrinks the container size.
+     *
+     * @tparam ForwardIt Forward iterator type
+     * @param first Start of the range.
+     * @param last End of the range
+     * @return An end iterator for the result range.
+     */
     template<class ForwardIt>
     constexpr ForwardIt unique(ForwardIt first, ForwardIt last)
     {
@@ -678,7 +823,7 @@ namespace pstd {
         *d_first = *first;
         ++first;
         ++d_first;
-        while(first != last)
+        while(not(first == last))
         {
             if(not p(*last_unique, *first))
             {
@@ -702,7 +847,7 @@ namespace pstd {
         static_assert(is_input_iterator<InputIt>::value, " InputIt must be input iterator");
         if(first == last) return true;
         bool reached_partition = false; //set to true on the first false result.
-        while(first != last)
+        while(not(first == last))
         {
             auto res = p(*first);
             if(not res) reached_partition = true; //all elements following should be false.
@@ -720,7 +865,7 @@ namespace pstd {
         first = find_if_not(first, last, p);
         if(first == last) return first;
 
-        for(auto i = next(first); i != last; ++i)
+        for(auto i = next(first); not(i == last); ++i)
         {
             if(p(*i))
             {
@@ -741,7 +886,7 @@ namespace pstd {
     )
     {
         static_assert(is_input_iterator<InputIt>::value, " InputIt must be input iterator");
-        while(first != last)
+        while(not(first == last))
         {
             if(p(*first))
             {
@@ -770,7 +915,7 @@ namespace pstd {
         //now walk i forward until another true value is found. When it is found, rotate the remaining set so
         //that this element is in position first.
         auto i = first+1;
-        while(i != last)
+        while(not(i == last))
         {
             if(p(*i)) //we found another true, so rotate i into first.
             {
@@ -791,7 +936,7 @@ namespace pstd {
         {
             constexpr static ForwardIt partition_point(ForwardIt first, ForwardIt last, UnaryPredicate p)
             {
-                while(first != last)
+                while(not(first == last))
                 {
                     if(not p(*first)) return first;
                     ++first;
@@ -808,7 +953,7 @@ namespace pstd {
             constexpr static RandomIt partition_point(RandomIt first, RandomIt last, UnaryPredicate p)
             {
 
-                while(first != last)
+                while(not(first == last))
                 {
                     auto i = first + distance(first, last) / 2;
                     //branch on i
@@ -850,7 +995,7 @@ namespace pstd {
 
         auto i = next(first);
 
-        while(i != last)
+        while(not(i == last))
         {
             if(not comp(*first,  *i)) return i;
             ++first;
@@ -938,9 +1083,9 @@ namespace pstd {
         if(first == last) return;
         if(next(first) == last) return;
         auto elem = last-1;
-        while(elem != first)
+        while(not(elem == first))
         {
-            const auto parent = first + (distance(first, elem) - 1)/2; parent != first;
+            const auto parent = first + (distance(first, elem) - 1)/2; not(parent == first);
             //compare with parent
             if(comp(*parent, *elem))
             {
@@ -967,7 +1112,7 @@ namespace pstd {
 
         auto heap_end = first + 1; //start with one-element heap.
 
-        while(heap_end != last)
+        while(not(heap_end == last))
         {
             ++heap_end;  //add next element onto bottom of heap.
             push_heap(first, heap_end, comp);
@@ -996,11 +1141,11 @@ namespace pstd {
 
                 auto swap_location = elem;
                 if((*elem < *left_child)) swap_location = left_child;
-                if(right_child != last)
+                if(not(right_child == last))
                 {
                     if(comp(*elem, *right_child) and comp(*left_child, *right_child)) swap_location = right_child;
                 }
-                if(swap_location != elem)
+                if(not(swap_location == elem))
                 {
                     iter_swap(elem, swap_location);
                     elem = swap_location;
@@ -1032,7 +1177,7 @@ namespace pstd {
     void sort_heap(RandomIt first, RandomIt last, Compare comp)
     {
         static_assert(is_random_access_iterator<RandomIt>::value, "Iterators must be random access");
-        while(first != last)
+        while(not(first == last))
         {
             pop_heap(first, last, comp);
             --last;
@@ -1084,7 +1229,7 @@ namespace pstd {
         auto dsize = distance(d_first, d_last);
         auto heap_end = d_first;
         //push some values into
-        while(first != last and heap_end != d_last)
+        while(not(first == last) and not(heap_end == d_last))
         {
             *heap_end = *first;
             ++first;
@@ -1093,7 +1238,7 @@ namespace pstd {
         make_heap(d_first, heap_end);
         //result is now a maximal heap. So if we replace the top(front) element and percolate, then
         //eventually the largest elements will be removed.
-        while(first != last)
+        while(not(first == last))
         {
             if(*first < *d_first)
             {
@@ -1118,7 +1263,7 @@ namespace pstd {
         static_assert(is_input_iterator<InputIt1>::value, "InputIt1 must be an input iterator");
         static_assert(is_input_iterator<InputIt2>::value, "InputIt2 must be an input iterator");
 
-        while(first1 != last1 and first2 != last2)
+        while(not(first1 == last1) and not(first2 == last2))
         {
             if(comp(*first1, *first2))
             {
@@ -1133,11 +1278,11 @@ namespace pstd {
             ++d_first;
         }
         //at least one of either range 1 or two is now empty.
-        if(first1 != last1)
+        if(not(first1 == last1))
         {
             d_first = copy(first1, last1, d_first);
         }
-        else if(first2 != last2)
+        else if(not(first2 == last2))
         {
             d_first = copy(first2, last2, d_first);
         }
@@ -1266,11 +1411,11 @@ namespace pstd {
         }
         //3-way insertion sort.
         auto ip = first;
-        while(ip != prev(last))
+        while(not(ip == prev(last)))
         {
             auto best = ip+1;
             first = best;
-            while(first != last)
+            while(not(first == last))
             {
                 if(comp(*first, *best)) best = first;
                 ++first;
@@ -1367,7 +1512,7 @@ namespace pstd {
     {
         static_assert(is_input_iterator<InputIt1>::value, "first1 and last1 must be input iterators");
         static_assert(is_input_iterator<InputIt2>::value, "first2 and last2 must be input iterators");
-        for(;first2 != last2; ++first1)
+        for(;not(first2 == last2); ++first1)
         {
             if(first1 == last1 or comp(*first2, *first1))
             {
@@ -1387,7 +1532,7 @@ namespace pstd {
     template<class InputIt1, class InputIt2, class OutputIt, class Compare>
     constexpr OutputIt set_difference(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2, OutputIt d_first, Compare comp)
     {
-        while(first1 != last1)
+        while(not(first1 == last1))
         {
             if(first2 == last2) return copy(first1, last1, d_first);
             if(comp(*first1, *first2))
@@ -1416,7 +1561,7 @@ namespace pstd {
     template<class InputIt1, class InputIt2, class OutputIt, class Compare>
     constexpr OutputIt set_intersection(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2, OutputIt d_first, Compare comp)
     {
-        while(first1 != last1 and first2 != last2)
+        while(not(first1 == last1) and not(first2 == last2))
         {
             if(comp(*first1, first2))
             {
@@ -1443,7 +1588,7 @@ namespace pstd {
     template<class InputIt1, class InputIt2, class OutputIt, class Compare>
     constexpr OutputIt set_symmetric_difference(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2, OutputIt d_first, Compare comp)
     {
-        while(first1 != last1)
+        while(not(first1 == last1))
         {
             if(first2 == last2) return copy(first1, last1, d_first);
             if(comp(*first1, *first2))
@@ -1476,7 +1621,7 @@ namespace pstd {
     template<class InputIt1, class InputIt2, class OutputIt, class Compare>
     constexpr OutputIt set_union(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2, OutputIt d_first, Compare comp)
     {
-        for(; first1 != last1; ++d_first)
+        for(; not(first1 == last1); ++d_first)
         {
             if(first2 == last2) return copy(first1, last1, d_first);
 
@@ -1557,7 +1702,7 @@ namespace pstd {
         if(first == last) return {first, first};
         auto ret = first;
         ++first;
-        while(first != last)
+        while(not(first == last))
         {
             if(comp(*ret, *first))
             {
@@ -1578,7 +1723,7 @@ namespace pstd {
         if(first == last) return {first, first};
         auto ret = first;
         ++first;
-        while(first != last)
+        while(not(first == last))
         {
             if(comp(*first, *ret))
             {
@@ -1600,7 +1745,7 @@ namespace pstd {
         if(first == last) return {first, first};
         pair<ForwardIt, ForwardIt> ret = {first, first};
         ++first;
-        while(first != last)
+        while(not(first == last))
         {
             if(comp(*first, *ret.first))
             {
@@ -1622,7 +1767,7 @@ namespace pstd {
     template<class InputIt1, class InputIt2, class Compare>
     bool lexographical_compare(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2, Compare comp)
     {
-        while(first1 != last1 and first2 != last2)
+        while(not(first1 == last1) and not(first2 == last2))
         {
             if(comp(*first1, *first2)) return true;
             else if(comp(*first2, *first1)) return false;
@@ -1630,7 +1775,7 @@ namespace pstd {
             ++first2;
         }
         //at least one of the ranges has ended.
-        return (first1 == last1 and first2 != last2);
+        return (first1 == last1 and not(first2 == last2));
     };
     template<class InputIt1, class InputIt2>
     bool lexographical_compare(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2)
