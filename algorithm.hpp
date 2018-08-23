@@ -5,8 +5,9 @@
 #include <stdint.h>
 #include "iterator.hpp"
 #include <type_traits>
+#include "pstdlib_namespace.hpp"
 
-namespace pstd {
+namespace PSTDLIB_NAMESPACE {
 
     namespace detail
     {
@@ -896,7 +897,7 @@ namespace pstd {
         InputIt first,
         InputIt last,
         OutputIt1 d_first_true,
-        OutputIt1 d_first_false,
+        OutputIt2 d_first_false,
         UnaryPredicate p
     )
     {
@@ -1714,7 +1715,7 @@ namespace pstd {
     template<class ForwardIt, class Compare>
     constexpr ForwardIt max_element(ForwardIt first, ForwardIt last, Compare comp)
     {
-        if(first == last) return {first, first};
+        if(first == last) return first;
         auto ret = first;
         ++first;
         while(not(first == last))
@@ -1735,7 +1736,7 @@ namespace pstd {
     template<class ForwardIt, class Compare>
     constexpr ForwardIt min_element(ForwardIt first, ForwardIt last, Compare comp)
     {
-        if(first == last) return {first, first};
+        if(first == last) return first;
         auto ret = first;
         ++first;
         while(not(first == last))

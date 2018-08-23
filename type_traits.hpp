@@ -1,9 +1,10 @@
 #pragma once
+#include "pstdlib_namespace.hpp"
 #include "template_ops.hpp"
 #include <stdint.h>
 #include <stddef.h>
 
-namespace pstd{
+namespace PSTDLIB_NAMESPACE{
 
     template<typename T, T Val>
     struct integral_constant

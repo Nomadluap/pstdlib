@@ -3,8 +3,9 @@
 #include <stdint.h>
 #include "type_traits.hpp"
 #include "utility.hpp"
+#include "pstdlib_namespace.hpp"
 
-namespace pstd {
+namespace PSTDLIB_NAMESPACE {
     /**
      * Iterator tag types
      */

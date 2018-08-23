@@ -1,7 +1,7 @@
 
 
 #include "utility.hpp"
-using namespace pstd;
+using namespace PSTDLIB_NAMESPACE;
 
 namespace
 {

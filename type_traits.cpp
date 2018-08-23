@@ -2,7 +2,7 @@
 
 #include "type_traits.hpp"
 
-using namespace pstd;
+using namespace PSTDLIB_NAMESPACE;
 namespace
 {
     class Abstract

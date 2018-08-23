@@ -2,8 +2,9 @@
 
 #pragma once
 #include "type_traits.hpp"
+#include "pstdlib_namespace.hpp"
 
-namespace pstd {
+namespace PSTDLIB_NAMESPACE {
 
 
 

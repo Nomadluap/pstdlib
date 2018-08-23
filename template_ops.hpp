@@ -1,8 +1,9 @@
 
 
 #pragma once
+#include "pstdlib_namespace.hpp"
 
-namespace pstd {
+namespace PSTDLIB_NAMESPACE {
 
     //checking for equivalence
     /*

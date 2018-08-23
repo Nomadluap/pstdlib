@@ -5,6 +5,7 @@ option(PSTDLIB_TESTING "Build test library for pstdlib" OFF)
 set(SOURCES
     cstring.cpp cstring.hpp
     iterator.hpp pstdlib_namespace.hpp type_traits.hpp type_traits.cpp template_ops.cpp template_ops.hpp utility.cpp utility.hpp iterator.cpp array.cpp array.hpp algorithm.cpp algorithm.hpp initializer_list.cpp initializer_list.hpp extra_type_traits.cpp extra_type_traits.hpp)
+
 add_library(pstdlib STATIC  ${SOURCES})
 
 set_target_properties(pstdlib PROPERTIES CXX_STANDARD 14)
@@ -12,6 +13,6 @@ target_include_directories(pstdlib INTERFACE  ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_options(pstdlib PRIVATE -Wall -Wextra -ffreestanding)
 
 if(PSTDLIB_TESTING)
-    add_definitions(-DPSTDLIB_TESTING=1)
+    target_compile_definitions(pstdlib PUBLIC PSTDLIB_BUILDING_FOR_TESTING=1)
     add_subdirectory(testing)
 endif()

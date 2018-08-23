@@ -2,5 +2,5 @@
 
 #include "array.hpp"
 
-using namespace pstd;
+using namespace PSTDLIB_NAMESPACE;
 

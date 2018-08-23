@@ -2,8 +2,9 @@
 
 #pragma once
 #include "type_traits.hpp"
+#include "pstdlib_namespace.hpp"
 
-namespace pstd
+namespace PSTDLIB_NAMESPACE
 {
     template<typename T>
     constexpr inline typename remove_reference<T>::type&& move(T&& t) noexcept

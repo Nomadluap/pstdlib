@@ -6,9 +6,9 @@
 #include "initializer_list.hpp"
 #include "iterator.hpp"
 #include "utility.hpp"
+#include "pstdlib_namespace.hpp"
 
-namespace pstd
-{
+namespace PSTDLIB_NAMESPACE {
     template<class T, size_t N>
     struct array
     {

@@ -12,7 +12,7 @@ it deviates significantly. Examples include:
 
  - C varargs functions will be replaced with C++ variable templates.
 
- - C++ iostreams will not be implemented.
+ - C++ iostreams will (probably) not be implemented.
 
  - All functions are currently in the 'pstd' namespace, to ease testing.
 

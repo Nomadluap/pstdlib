@@ -3,9 +3,9 @@
 #pragma once
 #include <stdint.h>
 #include <stddef.h>
+#include "pstdlib_namespace.hpp"
 
-namespace pstd
-{
+namespace PSTDLIB_NAMESPACE {
     /**
      * Search for the first occurence of c in the first n characters of str.
      * @param str String to search
