@@ -866,9 +866,93 @@ TEST_CASE("partition", "[algorithm]")
 }
 TEST_CASE("partition_copy", "[algorithm]")
 {
+    SECTION("Random Tests")
+    {
+        for(int i = 0; i < 100; i++)
+        {
+            const auto N_ITEMS = 10;
+            auto arr = random_array<int, N_ITEMS>();
+            INFO("array=" << arr);
+            const auto partition_point = arr[0];
+            const auto pred = [partition_point](int i)
+            {
+                return i < partition_point;
+            };
+            array<int, N_ITEMS> out_less = {};
+            array<int, N_ITEMS> out_greater = {};
+            auto ends = partition_copy(begin(arr), end(arr), begin(out_less), begin(out_greater), pred);
+            INFO("out_true=" << out_less);
+            INFO("out_false=" << out_greater);
+            for(auto it = begin(out_less); it < ends.first; it++)
+            {
+                INFO("i=" << distance(begin(out_less), it));
+                REQUIRE(*it < partition_point);
+            }
+            for(auto it = begin(out_greater); it < ends.second; it++)
+            {
+                INFO("i=" << distance(begin(out_greater), it));
+                REQUIRE(*it >= partition_point);
+            }
+
+        }
+    }
 }
+
+struct StableOrderable
+{
+    int value = 0;
+    int position = 0;
+
+    bool operator<(StableOrderable const& other) const
+    {
+        return this->value < other.value;
+    }
+
+    template<size_t N>
+    static array<StableOrderable, N> random()
+    {
+        array<StableOrderable, N> arr = {};
+        for(size_t i = 0; i < N; i++)
+        {
+            arr[i] = {rand(), static_cast<int>(i)};
+        }
+        return arr;
+    }
+};
+
+std::ostream& operator<<(std::ostream& os, StableOrderable const& so)
+{
+    os << so.value << "[" << so.position << "]";
+    return os;
+}
+
+
+
 TEST_CASE("stable_partition", "[algorithm]")
 {
+    SECTION("Random Tests")
+    {
+        const auto N_ITEMS = 10;
+        for(int i = 0; i < 100; i++)
+        {
+            auto arr = StableOrderable::random<N_ITEMS>();
+            INFO("Before=" << arr);
+            auto const pp = arr[0];
+            auto pred = [pp](StableOrderable const& so)
+            {
+                return so < pp;
+            };
+            stable_partition(begin(arr), end(arr), pred);
+            INFO("After=" << arr);
+            REQUIRE(is_partitioned(begin(arr), end(arr), pred));
+            for(int i = 0; i < N_ITEMS-1; i++)
+            {
+                auto const& a = arr[i];
+                auto const& b = arr[i+1];
+                if(a.value == b.value) REQUIRE(a.position < b.position);
+            }
+        }
+    }
 }
 TEST_CASE("partition_point", "[algorithm]")
 {
@@ -950,21 +1034,109 @@ TEST_CASE("clamp", "[algorithm]")
 }
 TEST_CASE("max", "[algorithm]")
 {
+    REQUIRE(max(0, 0) == 0);
+    REQUIRE(max(1, 0) == 1);
+    REQUIRE(max(0, 1) == 1);
 }
 TEST_CASE("min", "[algorithm]")
 {
+    REQUIRE(min(0, 0) == 0);
+    REQUIRE(min(1, 0) == 0);
+    REQUIRE(min(0, 1) == 0);
 }
 TEST_CASE("max_element", "[algorithm]")
 {
+    SECTION("iota array")
+    {
+        const array<int, 10> arr = {{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}};
+        auto it = max_element(begin(arr), end(arr));
+        REQUIRE(distance(begin(arr), it) == 9);
+    }
+    SECTION("const_array")
+    {
+        const array<int, 10> arr= {{0, 0, 0, 0, 0,  0, 0, 0, 0, 0}};
+        auto it = max_element(begin(arr), end(arr));
+        REQUIRE(it == begin(arr));
+    }
+    SECTION("outlier")
+    {
+        const array<int, 10> arr= {{0, 0, 1, 0, 0,  0, 0, 0, 0, 0}};
+        auto it = max_element(begin(arr), end(arr));
+        REQUIRE(it == begin(arr)+2);
+    }
+    SECTION("empty")
+    {
+        const array<int, 0> arr = {};
+        REQUIRE(max_element(begin(arr), end(arr)) == begin(arr));
+    }
 }
 TEST_CASE("min_element", "[algorithm]")
 {
+    SECTION("iota array")
+    {
+        const array<int, 10> arr = {{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}};
+        auto it = min_element(begin(arr), end(arr));
+        REQUIRE(distance(begin(arr), it) == 0);
+    }
+    SECTION("const_array")
+    {
+        const array<int, 10> arr= {{0, 0, 0, 0, 0,  0, 0, 0, 0, 0}};
+        auto it = min_element(begin(arr), end(arr));
+        REQUIRE(it == begin(arr));
+    }
+    SECTION("outlier")
+    {
+        const array<int, 10> arr= {{0, 0, -1, 0, 0,  0, 0, 0, 0, 0}};
+        auto it = min_element(begin(arr), end(arr));
+        REQUIRE(it == begin(arr)+2);
+    }
+    SECTION("empty")
+    {
+        const array<int, 0> arr = {};
+        REQUIRE(min_element(begin(arr), end(arr)) == begin(arr));
+    }
 }
 TEST_CASE("minmax", "[algorithm]")
 {
+    auto t1 = minmax(0, 0);
+    REQUIRE(t1.first == 0);
+    REQUIRE(t1.second == 0);
+
+    auto t2 = minmax(0, 1);
+    REQUIRE(t2.first == 0);
+    REQUIRE(t2.second == 1);
+
+    auto t3 = minmax(1, 0);
+    REQUIRE(t3.first == 0);
+    REQUIRE(t3.second == 1);
 }
 TEST_CASE("minmax_element", "[algorithm]")
 {
+    std::srand(0);
+    SECTION("random")
+    {
+        for(int i = 0; i < 100; i++)
+        {
+            auto arr = random_array<int, 10>();
+
+            INFO("arr=" << arr);
+            auto min = min_element(begin(arr), end(arr));
+            auto max =  max_element(begin(arr), end(arr));
+            INFO("min=" << distance(begin(arr), min));
+            INFO("*min=" << *min);
+            INFO("max=" << distance(begin(arr), max));
+            INFO("*max=" << *max);
+
+            auto mm = minmax_element(begin(arr), end(arr));
+            INFO("mm.first=" << distance(begin(arr), mm.first));
+            INFO("*mm.first=" << *mm.first);
+            INFO("mm.second=" << distance(begin(arr), mm.second));
+            INFO("*mm.second=" << *mm.second);
+            REQUIRE(mm.first == min);
+            REQUIRE(mm.second == max);
+        }
+
+    }
 }
 TEST_CASE("lexographical_compare", "[algorithm]")
 {
