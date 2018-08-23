@@ -21,8 +21,8 @@ namespace PSTDLIB_NAMESPACE {
         using value_type = T;
         using pointer = T*;
         using const_pointer = T const*;
-        using reverse_iterator = pstd::reverse_iterator<iterator>;
-        using const_reverse_iterator = pstd::reverse_iterator<const_iterator>;
+        using reverse_iterator = PSTDLIB_NAMESPACE::reverse_iterator<iterator>;
+        using const_reverse_iterator = PSTDLIB_NAMESPACE::reverse_iterator<const_iterator>;
 
         void fill(const T& u)
         {

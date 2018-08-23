@@ -113,8 +113,8 @@ namespace PSTDLIB_NAMESPACE
 
         void swap(pair<T1, T2>& other)
         {
-            pstd::swap(this->first, other.first);
-            pstd::swap(this->second, other.second);
+            swap(this->first, other.first);
+            swap(this->second, other.second);
         }
     };
     template<typename T1, typename T2>

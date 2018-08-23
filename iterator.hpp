@@ -36,7 +36,7 @@ namespace PSTDLIB_NAMESPACE {
         using value_type = remove_cv_t<T>;
         using pointer = T *;
         using reference = T &;
-        using iterator_category = pstd::random_access_iterator_tag;
+        using iterator_category = random_access_iterator_tag;
     };
 
     template<typename Iter>
@@ -215,7 +215,7 @@ namespace PSTDLIB_NAMESPACE {
         using value_type = void;
         using pointer = void;
         using reference = void;
-        using iterator_category = pstd::output_iterator_tag;
+        using iterator_category = output_iterator_tag;
         explicit back_insert_iterator(Container& c): c(c){};
 
         back_insert_iterator<Container>& operator=(typename Container::value_type const& obj)
@@ -242,7 +242,7 @@ namespace PSTDLIB_NAMESPACE {
         using value_type = void;
         using pointer = void;
         using reference = void;
-        using iterator_category = pstd::output_iterator_tag;
+        using iterator_category = output_iterator_tag;
         explicit front_insert_iterator(Container& c): c(c){};
 
         front_insert_iterator<Container>& operator=(typename Container::value_type const& obj)
@@ -269,7 +269,7 @@ namespace PSTDLIB_NAMESPACE {
         using value_type = void;
         using pointer = void;
         using reference = void;
-        using iterator_category = pstd::output_iterator_tag;
+        using iterator_category = output_iterator_tag;
 
         explicit insert_iterator(Container& c, typename Container::iterator i): c(c), i(i){};
 
