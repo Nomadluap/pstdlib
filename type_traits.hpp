@@ -458,5 +458,31 @@ namespace PSTDLIB_NAMESPACE{
     template<typename F, typename Ret, typename... Args>
     struct is_invocable_r: detail::is_callable_converted<F, void, Ret, Args...>{};
 
+    namespace detail
+    {
+
+        template<typename T>
+        struct type_decl { using type = T; };
+
+        template<typename T>
+        struct make_unsigned_impl{};
+
+        template<> struct make_unsigned_impl<int>: type_decl<unsigned int>{};
+        template<> struct make_unsigned_impl<long>: type_decl<unsigned long>{};
+        template<> struct make_unsigned_impl<short>: type_decl<unsigned short>{};
+        template<> struct make_unsigned_impl<char>: type_decl<unsigned char>{};
+        template<> struct make_unsigned_impl<signed char>: type_decl<unsigned char>{};
+        template<> struct make_unsigned_impl<long long>: type_decl<unsigned long long>{};
+    }
+
+    template<typename T> struct make_unsigned:
+        conditional<is_unsigned<T>::value, detail::type_decl<T>, detail::make_unsigned_impl<T>>::type
+    {};
+
+    //cv specializations
+    template<typename T>
+    struct make_unsigned<const T>: add_const<typename make_unsigned<T>::type>::type{};
+    template<typename T>
+    struct make_unsigned<volatile T>: add_volatile<typename make_unsigned<T>::type>::type{};
 
 }
